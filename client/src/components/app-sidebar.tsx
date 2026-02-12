@@ -1,5 +1,6 @@
 import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import * as LucideIcons from "lucide-react";
 import {
   LayoutDashboard,
   Globe,
@@ -29,7 +30,9 @@ import {
   ArrowRightLeft,
   Search,
   FileUp,
+  Puzzle,
 } from "lucide-react";
+import { getPublishedApps } from "@shared/originApps";
 import {
   Sidebar,
   SidebarContent,
@@ -71,9 +74,34 @@ const clientNav: NavItem[] = [
 const clientSecondaryNav: NavItem[] = [
   { title: "Marketplace", href: "/app/marketplace", icon: Store },
   { title: "Migration", href: "/app/migration", icon: FileUp },
-  { title: "Leads", href: "/app/crm/leads", icon: Contact },
-  { title: "Contacts", href: "/app/crm/contacts", icon: Users },
 ];
+
+function resolveIcon(iconName: string): React.ComponentType<{ className?: string }> {
+  const icon = (LucideIcons as Record<string, unknown>)[iconName];
+  if (typeof icon === "function" || (typeof icon === "object" && icon !== null)) {
+    return icon as React.ComponentType<{ className?: string }>;
+  }
+  return Puzzle;
+}
+
+function getAppNavItems(entitlements: string[] | null | undefined): NavItem[] {
+  if (!entitlements || entitlements.length === 0) return [];
+  const published = getPublishedApps();
+  const items: NavItem[] = [];
+  for (const app of published) {
+    if (entitlements.includes(app.entitlementKey)) {
+      for (const nav of app.nav) {
+        items.push({
+          title: nav.title,
+          href: nav.href,
+          icon: resolveIcon(nav.icon),
+          badge: nav.badge,
+        });
+      }
+    }
+  }
+  return items;
+}
 
 const clientBottomNav: NavItem[] = [
   { title: "Billing", href: "/app/billing", icon: CreditCard },
@@ -163,6 +191,20 @@ export function AppSidebar() {
     queryKey: ["/api/user/me"],
   });
 
+  const hasWorkspace = !!meData?.activeWorkspaceId;
+
+  const { data: entData } = useQuery<{ features: string[] }>({
+    queryKey: ["/api/billing/entitlements"],
+    enabled: hasWorkspace,
+  });
+
+  const isSuperAdmin = meData?.user?.role === "SUPER_ADMIN";
+  const entitlements = isSuperAdmin
+    ? getPublishedApps().map((a) => a.entitlementKey)
+    : entData?.features || null;
+
+  const appNavItems = hasWorkspace ? getAppNavItems(entitlements) : [];
+
   const isPlatformUser =
     meData?.user?.role === "SUPER_ADMIN" || meData?.user?.role === "AGENCY_ADMIN";
   const isStudioMode = location.startsWith("/app/studio") || location === "/app/studio";
@@ -214,6 +256,12 @@ export function AppSidebar() {
             <NavSection items={clientNav} location={location} label="Content" />
             <SidebarSeparator />
             <NavSection items={clientSecondaryNav} location={location} label="Extend" />
+            {appNavItems.length > 0 && (
+              <>
+                <SidebarSeparator />
+                <NavSection items={appNavItems} location={location} label="Apps" />
+              </>
+            )}
             <SidebarSeparator />
             <NavSection items={clientBottomNav} location={location} />
           </>

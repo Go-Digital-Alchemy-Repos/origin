@@ -1,0 +1,170 @@
+You are working in the ORIGIN codebase. Re-engineer and implement a SAFE “ORIGIN App Add-on Generator” system that cannot break runtime navigation or cause infinite request loops.
+
+HARD REQUIREMENTS
+- NON-DESTRUCTIVE: do not remove existing features.
+- SAFE-BY-DEFAULT: generator output must be inert until explicitly enabled.
+- Must NOT change onboarding behavior, must NOT add polling, must NOT add any auto-recompute loops.
+- Must enforce ORIGIN standards: modular server modules, tenancy scoping, Inter font, design tokens/primitives, light/dark.
+- Any new UI route created by the generator must NOT run any network calls until a workspace is confirmed.
+- All queries must have retry fuses: never infinite retry; treat 401/403/409 WORKSPACE_CONTEXT_REQUIRED as “do not retry”.
+
+GOALS
+1) Define an “App Contract” type and registry file structure.
+2) Implement a generator command that scaffolds an app add-on:
+   - server module skeleton
+   - UI skeleton
+   - shared types
+   - docs stubs (dev + resource)
+   - marketplace item stub (DRAFT)
+3) Ensure the generated app is NOT auto-mounted anywhere by default.
+4) Provide an explicit “publish/enable” workflow:
+   - registry can include apps in “draft” state
+   - UI/nav only shows apps when entitlement is present AND app is published AND enabled.
+
+========================
+PART A — APP CONTRACT + REGISTRY (INERT)
+========================
+A1) Create shared/originApps/defineOriginApp.ts with a strict contract:
+- key, name, description, version (semver)
+- entitlementKey (e.g. "apps.crm")
+- status: "draft" | "published" | "deprecated"
+- nav definitions (but note: nav is only used when app is published AND entitlement enabled)
+- docs slugs: dev + resource
+- optional builder components/widgets lists
+- optional marketplace metadata
+
+A2) Create shared/originApps/registry.ts exporting:
+- originApps: OriginAppDefinition[]
+- getOriginApp(key)
+- getPublishedApps()
+- getEnabledAppsForWorkspace(entitlements)
+
+IMPORTANT SAFETY RULE:
+- registry existence must NOT change runtime behavior unless app is both:
+  (status === "published") AND (entitlement enabled)
+
+========================
+PART B — GENERATOR COMMAND (SCAFFOLD ONLY)
+========================
+B1) Add a script runnable from terminal, e.g.
+- pnpm origin:gen-app --key crm --name "CRM" --entitlement apps.crm
+
+B2) Generator creates files ONLY. It must NOT modify runtime router files directly in a way that mounts pages globally.
+
+It should create:
+
+1) Server skeleton:
+server/src/modules/apps/<key>/
+  index.ts
+  <key>.routes.ts
+  <key>.service.ts
+  <key>.repo.ts
+  <key>.schemas.ts
+  types.ts
+
+Routes MUST include:
+- GET /api/apps/<key>/health
+Health route behavior:
+- Requires auth + workspace context + entitlement check
+- Returns { ok: true, app: { key, version } }
+- If missing workspace context: return 409 with code WORKSPACE_CONTEXT_REQUIRED (consistent shape)
+- No other endpoints are required yet.
+
+2) Frontend skeleton (INERT):
+apps/app/src/apps/<key>/
+  routes.tsx
+  <Key>Home.tsx
+  <key>.docs.ts (optional helper)
+  components/
+
+The generated UI page must:
+- Render a premium empty state (“<Name> is installed but not configured yet”)
+- Must not fetch anything on mount.
+- Must use a WorkspaceGuard component BEFORE enabling any fetch UI.
+
+3) Shared types:
+shared/apps/<key>/
+  types.ts
+  schemas.ts
+
+4) Docs:
+docs/apps/<key>_DEV.md
+docs/apps/<key>_RESOURCE.md
+These are stubs but must be created.
+
+5) Marketplace stub row creation SHOULD NOT RUN AUTOMATICALLY (no DB writes inside generator by default).
+Instead:
+- Generator outputs a small JSON manifest file:
+  docs/apps/<key>.manifest.json
+containing marketplace fields to be applied by a separate seed script.
+
+B3) Create a separate SEED command (explicit):
+- pnpm origin:seed-marketplace-item --key crm
+This is the only thing that writes to DB for marketplace items.
+
+========================
+PART C — RUNTIME WIRING (GUARDED AND OPTIONAL)
+========================
+C1) Server route aggregator:
+- Ensure there is an apps router loader that is safe:
+  - It can import app routes, but those routes must be entitlement-gated.
+- Importing a route file is ok; mounting it is ok if the route itself is gated and does not affect general pages.
+
+C2) Frontend route mounting MUST be gated:
+- In the main app router, add a single “/apps” section that loads app routes dynamically ONLY for enabled apps.
+- It must check:
+  - workspace selected
+  - entitlements loaded
+  - app status === "published"
+- If any are missing, do not mount those routes.
+
+C3) Nav injection MUST be gated:
+- Sidebar “Apps” section appears only after:
+  - workspace context exists
+  - entitlements are loaded
+- Individual app nav items appear only when entitlement enabled AND app published.
+
+C4) Provide a reusable WorkspaceGuard utility component/hook:
+- If no workspace context: redirect to workspace picker (or show “Select workspace” screen)
+- If unauthorized: redirect to login
+- Only after workspace exists should any app query be allowed.
+
+C5) Query retry fuse:
+- Provide a shared fetch wrapper or React Query defaults for app modules:
+  - retry: false for 401/403/409(WORKSPACE_CONTEXT_REQUIRED)
+  - max retries (e.g., 2) for transient 5xx/network only
+
+========================
+PART D — PUBLISH/ENABLE FLOW (NO SURPRISES)
+========================
+D1) Platform Studio should have an “Apps Catalog” manager that can:
+- set app status draft/published/deprecated (writes to DB OR a config file, whichever is already used)
+- link app to marketplace item (once seeded)
+- show required entitlement key
+
+D2) Entitlements control:
+- Enabling happens via Marketplace purchase → entitlements table update
+- “Published” controls visibility
+Both must be true for the app to appear.
+
+========================
+PART E — DOCUMENTATION
+========================
+Create /docs/ORIGIN_APP_ADDON_STANDARD.md including:
+- app contract
+- generator usage
+- seed usage
+- gating rules (must not fetch without workspace)
+- retry fuse rules
+- definition of done for shipping an app
+
+Also add Super Admin Docs entry:
+- “ORIGIN App Add-on Generator & Standards”
+
+OUTPUT REQUIREMENTS
+At end, print:
+- How to generate an app (command)
+- How to seed its marketplace item (command)
+- What files were created
+- Where app routes/nav appear (and the gating rules)
+- How the solution avoids infinite loops

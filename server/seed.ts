@@ -1954,6 +1954,63 @@ The /chat endpoint requires OPENAI_API_KEY. All other endpoints work without it,
     sortOrder: 26,
     isPublished: true,
   },
+  {
+    title: "ORIGIN App Add-on Generator & Standards",
+    slug: "origin-app-addon-standard",
+    content: `The ORIGIN App Add-on system provides a standardized way to create, distribute, and manage workspace-scoped applications.
+
+## Generator Usage
+
+Generate a new app scaffold:
+
+\`\`\`bash
+npx tsx scripts/generate-origin-app.ts \\
+  --key my-app \\
+  --name "My App" \\
+  --entitlement apps.my-app
+\`\`\`
+
+## App Contract
+
+Every app is defined by an \`OriginAppDefinition\` in \`shared/originApps/registry.ts\` with:
+- **key**: Unique lowercase identifier
+- **entitlementKey**: Feature gate (must start with \`apps.\`)
+- **status**: \`draft\` | \`published\` | \`deprecated\`
+- **nav**: Sidebar navigation items (only shown when published + entitled)
+
+## Safety Rules
+
+1. Generated apps are INERT until explicitly published and entitled
+2. All routes gated by \`requireAuth()\`, \`requireWorkspaceContext()\`, \`requireEntitlement()\`
+3. Frontend queries use \`WorkspaceGuard\` before any data fetching
+4. Query retry is globally disabled for 401/403/409 responses
+5. No polling or auto-recompute loops
+
+## Files Created
+
+| Path | Purpose |
+|------|---------|
+| \`server/modules/apps/<key>/\` | Server module |
+| \`client/src/pages/apps/<key>/\` | Frontend pages |
+| \`shared/apps/<key>/\` | Shared types |
+| \`docs/apps/<key>_DEV.md\` | Developer docs |
+| \`docs/apps/<key>_RESOURCE.md\` | Help docs |
+| \`docs/apps/<key>.manifest.json\` | Marketplace manifest |
+
+## Publish Flow
+
+1. Generate app with CLI
+2. Register in \`shared/originApps/registry.ts\` (status: "draft")
+3. Add server module to \`server/modules/registry.ts\`
+4. Build features
+5. Change status to "published"
+6. Add entitlement key to billing plans`,
+    category: "guides",
+    type: "developer",
+    tags: ["apps", "generator", "addon", "standards", "architecture"],
+    sortOrder: 27,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [

@@ -7,6 +7,7 @@ import {
   createCheckoutSession,
   createPortalSession,
   getBillingStatus,
+  getEntitlement,
   handleWebhookEvent,
   isStripeConfigured,
 } from "./billing.service";
@@ -61,6 +62,19 @@ export function createBillingRoutes(): Router {
       res.json({ url: session.url });
     } catch (err) {
       log(`Checkout error: ${err instanceof Error ? err.message : String(err)}`, "billing");
+      next(err);
+    }
+  });
+
+  router.get("/entitlements", requireAuth(), requireWorkspaceContext(), async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const workspaceId = req.session!.activeWorkspaceId!;
+      const ent = await getEntitlement(workspaceId);
+      res.json({
+        features: (ent?.features as string[]) || [],
+        limits: ent?.limits || {},
+      });
+    } catch (err) {
       next(err);
     }
   });

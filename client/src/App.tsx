@@ -61,6 +61,7 @@ import RedirectsPage from "@/pages/redirects";
 import SiteSeoPage from "@/pages/site-seo";
 import BlogPage from "@/pages/blog";
 import OnboardingPage from "@/pages/onboarding";
+import StudioAppsPage from "@/pages/studio-apps";
 
 function AppRouter() {
   return (
@@ -96,7 +97,7 @@ function AppRouter() {
       <Route path="/app/studio/site-kits" component={SiteKitsPage} />
       <Route path="/app/studio/sections">{() => <StubPage title="Sections" description="Design reusable page sections. Build a library of drag-and-drop content blocks." icon="layers" studio />}</Route>
       <Route path="/app/studio/widgets">{() => <StubPage title="Widgets" description="Create and manage interactive widgets. Embeddable components for any site." icon="component" studio />}</Route>
-      <Route path="/app/studio/apps">{() => <StubPage title="Apps" description="Platform applications and integrations. Manage first-party and third-party apps." icon="box" studio />}</Route>
+      <Route path="/app/studio/apps" component={StudioAppsPage} />
       <Route path="/app/studio/marketplace" component={StudioMarketplacePage} />
       <Route path="/app/studio/components" component={ComponentRegistryPage} />
       <Route path="/app/studio/status">{() => <StubPage title="System Status" description="Platform health monitoring. Uptime, performance metrics, and service status." icon="activity" studio />}</Route>
