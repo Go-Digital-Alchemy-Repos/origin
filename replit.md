@@ -40,9 +40,10 @@ The frontend uses React 18, Tailwind CSS, and shadcn/ui. `wouter` handles routin
 -   **Page Builder:** Utilizes `@puckeditor/core` for a visual drag-and-drop experience, mapping to the Global Component Registry. Supports responsive previews and versioned content.
 -   **Site Theme System:** Per-site semantic tokens (surface, text, accent for light/dark modes) and layout presets (header, footer, spacing, container, buttons) configurable via a theme editor UI.
 -   **Marketplace Purchasing:** Stripe-backed purchases for marketplace items with billing types (free, subscription, one_time). `workspace_purchases` table tracks purchases. Checkout via Stripe sessions, webhook-driven purchase recording, and install gating for paid items.
+-   **Site Kits System:** Bundled site packages containing theme presets, page templates, section presets, collection schemas, and starter content. Super Admin creates/manages kits with asset-based architecture (`site_kits` + `site_kit_assets` tables). Publishing auto-creates marketplace items under "site-kit" category. Client install is non-destructive (creates new pages/content without overwriting). Draft kits can be deleted; published kits must be unpublished first. Kits require at least one theme preset and one asset to publish.
 
 **Core Server Modules:**
-`siteTheme/`, `cmsPages/`, `cmsCollections/`, `cmsMenus/`, `forms/`, `redirects/`, `seo/`, `blog/`, `publicSite/`, `auth/`, `billing/`, `marketplace/`, `component-registry/`, `docs/`.
+`siteTheme/`, `cmsPages/`, `cmsCollections/`, `cmsMenus/`, `forms/`, `redirects/`, `seo/`, `blog/`, `publicSite/`, `auth/`, `billing/`, `marketplace/`, `component-registry/`, `docs/`, `siteKits/`.
 
 ## External Dependencies
 

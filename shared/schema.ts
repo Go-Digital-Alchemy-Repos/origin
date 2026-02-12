@@ -715,6 +715,48 @@ export const insertRedirectSuggestionSchema = createInsertSchema(redirectSuggest
 export type InsertRedirectSuggestion = z.infer<typeof insertRedirectSuggestionSchema>;
 export type RedirectSuggestion = typeof redirectSuggestions.$inferSelect;
 
+export const siteKits = pgTable("site_kits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description").notNull(),
+  version: text("version").notNull().default("1.0.0"),
+  coverImage: text("cover_image"),
+  metadataJson: jsonb("metadata_json").notNull().default(sql`'{}'::jsonb`),
+  status: text("status").notNull().default("draft"),
+  marketplaceItemId: varchar("marketplace_item_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSiteKitSchema = createInsertSchema(siteKits).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSiteKit = z.infer<typeof insertSiteKitSchema>;
+export type SiteKit = typeof siteKits.$inferSelect;
+
+export const siteKitAssets = pgTable("site_kit_assets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteKitId: varchar("site_kit_id").notNull().references(() => siteKits.id, { onDelete: "cascade" }),
+  assetType: text("asset_type").notNull(),
+  assetRef: text("asset_ref").notNull(),
+  label: text("label"),
+  configJson: jsonb("config_json").notNull().default(sql`'{}'::jsonb`),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSiteKitAssetSchema = createInsertSchema(siteKitAssets).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertSiteKitAsset = z.infer<typeof insertSiteKitAssetSchema>;
+export type SiteKitAsset = typeof siteKitAssets.$inferSelect;
+
 export const siteSeoSettings = pgTable("site_seo_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }).unique(),

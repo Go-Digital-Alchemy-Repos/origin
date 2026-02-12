@@ -15,6 +15,7 @@ import { createRedirectsModule } from "./redirects";
 import { createSeoModule } from "./seo";
 import { createBlogModule } from "./blog";
 import { publicSitePreviewRoutes } from "./publicSite";
+import { createSiteKitsModule } from "./siteKits";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -35,6 +36,7 @@ export function registerAllModules(): Router {
   api.use(createSeoModule());
   api.use(createBlogModule());
   api.use(publicSitePreviewRoutes());
+  api.use(createSiteKitsModule());
 
   return api;
 }

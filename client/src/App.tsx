@@ -40,6 +40,7 @@ import AnalyticsPage from "@/pages/analytics";
 import SettingsPage from "@/pages/settings";
 import UsersAdminPage from "@/pages/users-admin";
 import StubPage from "@/pages/stub";
+import SiteKitsPage from "@/pages/site-kits";
 import BillingPage from "@/pages/billing";
 import HelpPage from "@/pages/help";
 import MarketplacePage from "@/pages/marketplace";
@@ -84,7 +85,7 @@ function AppRouter() {
       <Route path="/app/studio">{() => <StubPage title="Platform Dashboard" description="Overview of all clients, sites, and platform health across your ORIGIN instance." icon="layout-dashboard" studio />}</Route>
       <Route path="/app/studio/clients">{() => <StubPage title="Clients" description="Manage client workspaces, onboarding, and team access across the platform." icon="building-2" studio />}</Route>
       <Route path="/app/studio/sites">{() => <StubPage title="Sites" description="View and manage all sites across every workspace. Global site administration." icon="globe" studio />}</Route>
-      <Route path="/app/studio/site-kits">{() => <StubPage title="Site Kits" description="Pre-built site templates and starter kits. Create and publish reusable site packages." icon="package" studio />}</Route>
+      <Route path="/app/studio/site-kits" component={SiteKitsPage} />
       <Route path="/app/studio/sections">{() => <StubPage title="Sections" description="Design reusable page sections. Build a library of drag-and-drop content blocks." icon="layers" studio />}</Route>
       <Route path="/app/studio/widgets">{() => <StubPage title="Widgets" description="Create and manage interactive widgets. Embeddable components for any site." icon="component" studio />}</Route>
       <Route path="/app/studio/apps">{() => <StubPage title="Apps" description="Platform applications and integrations. Manage first-party and third-party apps." icon="box" studio />}</Route>
