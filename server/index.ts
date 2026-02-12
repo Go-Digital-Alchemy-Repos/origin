@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./auth";
 
 const app = express();
 const httpServer = createServer(app);
@@ -11,6 +13,8 @@ declare module "http" {
     rawBody: unknown;
   }
 }
+
+app.all("/api/auth/{*splat}", toNodeHandler(auth));
 
 app.use(
   express.json({

@@ -1,6 +1,8 @@
 import { db } from "./db";
-import { docEntries, originModules } from "@shared/schema";
+import { docEntries, originModules, users, workspaces, memberships, sites, auditLog } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { log } from "./index";
+import { auth } from "./auth";
 
 const seedDocs = [
   {
@@ -149,6 +151,19 @@ All API endpoints are prefixed with /api.
 
 - GET /api/health — Check platform health status
 
+## Authentication (BetterAuth)
+
+- POST /api/auth/sign-up/email — Register with email/password
+- POST /api/auth/sign-in/email — Login with email/password
+- POST /api/auth/sign-out — Sign out current session
+- GET /api/auth/get-session — Get current session
+
+## User & Workspace
+
+- GET /api/user/me — Get current user with workspaces
+- POST /api/user/select-workspace — Set active workspace
+- GET /api/user/workspaces — List user's workspaces
+
 ## Docs
 
 - GET /api/docs — List all documentation entries
@@ -179,11 +194,13 @@ All errors follow a standard shape:
 - 200 — Success
 - 201 — Created
 - 400 — Validation error
+- 401 — Unauthorized
+- 403 — Forbidden
 - 404 — Resource not found
 - 500 — Internal server error`,
     category: "api-reference",
     type: "developer",
-    tags: ["api", "reference", "endpoints"],
+    tags: ["api", "reference", "endpoints", "auth"],
     sortOrder: 3,
     isPublished: true,
   },
@@ -256,6 +273,93 @@ After installation, many modules can be configured from the Settings page. Look 
     type: "help",
     tags: ["modules", "installation", "configuration"],
     sortOrder: 5,
+    isPublished: true,
+  },
+  {
+    title: "Authentication & RBAC",
+    slug: "authentication-rbac",
+    content: `ORIGIN uses BetterAuth for authentication with a workspace-based tenancy model.
+
+## Authentication
+
+ORIGIN supports email/password authentication via BetterAuth. Sessions are managed server-side with secure HTTP-only cookies.
+
+### Login
+
+Navigate to /login to sign in with your email and password. After login, you'll be asked to select a workspace if you belong to multiple workspaces.
+
+### Registration
+
+New users can sign up at the login page. After registration, a personal workspace is automatically created.
+
+## Role-Based Access Control (RBAC)
+
+ORIGIN uses a two-level role system:
+
+### Global Roles
+- **SUPER_ADMIN** — Platform owner (Digital Alchemy). Full access to all workspaces, users, and platform settings.
+
+### Workspace Roles
+- **AGENCY_ADMIN** — Can manage many client sites under the agency workspace. Full admin access within the workspace.
+- **CLIENT_ADMIN** — Administrator of a specific workspace. Can manage sites, users, and settings.
+- **CLIENT_EDITOR** — Can edit content and manage sites within the workspace.
+- **CLIENT_VIEWER** — Read-only access to workspace content and sites.
+
+## Workspace Scoping
+
+All data access is scoped by workspace. When you select a workspace, all API requests are automatically scoped to that workspace's data. This ensures strict data isolation between workspaces.
+
+## Audit Logging
+
+All authentication events (login, logout, password changes) and workspace actions are logged to the audit trail for security compliance.`,
+    category: "guides",
+    type: "developer",
+    tags: ["auth", "rbac", "roles", "workspaces", "security"],
+    sortOrder: 6,
+    isPublished: true,
+  },
+  {
+    title: "Tenancy & Workspaces",
+    slug: "tenancy-workspaces",
+    content: `ORIGIN is built on a multi-tenant workspace model where each workspace is an isolated environment.
+
+## Workspace Model
+
+A workspace represents a tenant in ORIGIN. Each workspace has:
+
+- **Name** — Display name for the workspace
+- **Slug** — URL-friendly identifier
+- **Owner** — The user who created the workspace
+- **Plan** — Subscription tier (starter, pro, enterprise)
+- **Members** — Users with assigned roles
+
+## Creating a Workspace
+
+Workspaces are automatically created when a user signs up. SUPER_ADMIN and AGENCY_ADMIN users can create additional workspaces.
+
+## Membership
+
+Users can belong to multiple workspaces with different roles in each. The membership table tracks:
+
+- Which user belongs to which workspace
+- Their role within that workspace
+- When they joined
+
+## Sites
+
+Sites are owned by workspaces. Each workspace can have multiple sites depending on their plan tier. Sites include:
+
+- Name and slug
+- Custom domain configuration
+- Status (draft, published, archived)
+
+## Data Isolation
+
+All queries are automatically scoped by workspace_id using middleware. This ensures that users can only access data within their active workspace.`,
+    category: "guides",
+    type: "developer",
+    tags: ["tenancy", "workspaces", "multi-tenant", "sites"],
+    sortOrder: 7,
     isPublished: true,
   },
 ];
@@ -383,6 +487,83 @@ const seedModules = [
   },
 ];
 
+async function seedSuperAdmin() {
+  const existingAdmin = await db.select().from(users).where(eq(users.email, "admin@digitalalchemy.dev"));
+  if (existingAdmin.length > 0) {
+    log("Skipping SUPER_ADMIN seed (already exists)", "seed");
+    return existingAdmin[0];
+  }
+
+  log("Creating SUPER_ADMIN user...", "seed");
+
+  const ctx = await auth.api.signUpEmail({
+    body: {
+      email: "admin@digitalalchemy.dev",
+      password: "OriginAdmin2026!",
+      name: "Digital Alchemy Admin",
+    },
+  });
+
+  await db
+    .update(users)
+    .set({ role: "SUPER_ADMIN" })
+    .where(eq(users.id, ctx.user.id));
+
+  log("Created SUPER_ADMIN user (admin@digitalalchemy.dev)", "seed");
+  return { ...ctx.user, role: "SUPER_ADMIN" };
+}
+
+async function seedDemoWorkspace(adminId: string) {
+  const existingWs = await db.select().from(workspaces).where(eq(workspaces.slug, "digital-alchemy"));
+  if (existingWs.length > 0) {
+    log("Skipping demo workspace seed (already exists)", "seed");
+    return existingWs[0];
+  }
+
+  log("Creating demo workspace...", "seed");
+  const [ws] = await db
+    .insert(workspaces)
+    .values({
+      name: "Digital Alchemy",
+      slug: "digital-alchemy",
+      ownerId: adminId,
+      plan: "enterprise",
+    })
+    .returning();
+
+  await db.insert(memberships).values({
+    userId: adminId,
+    workspaceId: ws.id,
+    role: "SUPER_ADMIN",
+  });
+
+  log("Created demo workspace: Digital Alchemy", "seed");
+  return ws;
+}
+
+async function seedDemoSite(workspaceId: string) {
+  const existingSite = await db.select().from(sites).where(eq(sites.slug, "demo-site"));
+  if (existingSite.length > 0) {
+    log("Skipping demo site seed (already exists)", "seed");
+    return existingSite[0];
+  }
+
+  log("Creating demo site...", "seed");
+  const [site] = await db
+    .insert(sites)
+    .values({
+      name: "Demo Site",
+      slug: "demo-site",
+      workspaceId,
+      domain: "demo.origin.dev",
+      status: "published",
+    })
+    .returning();
+
+  log("Created demo site: Demo Site", "seed");
+  return site;
+}
+
 export async function seedDatabase() {
   try {
     const existingDocs = await db.select().from(docEntries);
@@ -402,6 +583,10 @@ export async function seedDatabase() {
     } else {
       log(`Skipping modules seed (${existingModules.length} already exist)`, "seed");
     }
+
+    const admin = await seedSuperAdmin();
+    const ws = await seedDemoWorkspace(admin.id);
+    await seedDemoSite(ws.id);
   } catch (err) {
     log(`Seed error: ${err}`, "seed");
   }

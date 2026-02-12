@@ -115,12 +115,12 @@ function MarketingNav() {
         </nav>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link href="/app">
+          <Link href="/login">
             <Button variant="outline" size="sm" data-testid="button-login">
               Log In
             </Button>
           </Link>
-          <Link href="/app">
+          <Link href="/login">
             <Button size="sm" data-testid="button-get-started">
               Get Started
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -182,7 +182,7 @@ function HeroSection() {
           variants={fadeUp}
           custom={3}
         >
-          <Link href="/app">
+          <Link href="/login">
             <Button size="lg" data-testid="button-hero-cta">
               Start Building
               <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -343,7 +343,7 @@ function PricingSection() {
                       </li>
                     ))}
                   </ul>
-                  <Link href="/app">
+                  <Link href="/login">
                     <Button
                       variant={plan.variant}
                       className="mt-6 w-full"
