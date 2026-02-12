@@ -270,6 +270,82 @@ export const docCategoryEnum = z.enum([
   "api-reference",
   "guides",
   "help",
+  "marketplace",
 ]);
 
 export type DocCategory = z.infer<typeof docCategoryEnum>;
+
+export const marketplaceItemTypeEnum = z.enum([
+  "site-kit",
+  "section",
+  "widget",
+  "app",
+  "add-on",
+]);
+
+export type MarketplaceItemType = z.infer<typeof marketplaceItemTypeEnum>;
+
+export const marketplaceItems = pgTable("marketplace_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description").notNull(),
+  longDescription: text("long_description"),
+  icon: text("icon"),
+  coverImage: text("cover_image"),
+  author: text("author").notNull().default("ORIGIN"),
+  priceId: text("price_id"),
+  isFree: boolean("is_free").notNull().default(true),
+  price: integer("price").notNull().default(0),
+  version: text("version").notNull().default("1.0.0"),
+  status: text("status").notNull().default("published"),
+  category: text("category"),
+  tags: text("tags").array().default(sql`'{}'::text[]`),
+  metadata: jsonb("metadata"),
+  docSlug: text("doc_slug"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMarketplaceItemSchema = createInsertSchema(marketplaceItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMarketplaceItem = z.infer<typeof insertMarketplaceItemSchema>;
+export type MarketplaceItem = typeof marketplaceItems.$inferSelect;
+
+export const marketplaceInstalls = pgTable("marketplace_installs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  itemId: varchar("item_id").notNull().references(() => marketplaceItems.id, { onDelete: "cascade" }),
+  enabled: boolean("enabled").notNull().default(true),
+  purchased: boolean("purchased").notNull().default(false),
+  installedAt: timestamp("installed_at").defaultNow(),
+});
+
+export const insertMarketplaceInstallSchema = createInsertSchema(marketplaceInstalls).omit({
+  id: true,
+  installedAt: true,
+});
+
+export type InsertMarketplaceInstall = z.infer<typeof insertMarketplaceInstallSchema>;
+export type MarketplaceInstall = typeof marketplaceInstalls.$inferSelect;
+
+export const previewSessions = pgTable("preview_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  itemId: varchar("item_id").notNull().references(() => marketplaceItems.id, { onDelete: "cascade" }),
+  previewStateJson: jsonb("preview_state_json"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPreviewSessionSchema = createInsertSchema(previewSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPreviewSession = z.infer<typeof insertPreviewSessionSchema>;
+export type PreviewSession = typeof previewSessions.$inferSelect;

@@ -9,6 +9,6 @@ export function createBillingModule(): Router {
 
 export function createBillingWebhookModule(): Router {
   const router = Router();
-  router.use("/webhooks", createWebhookRoute());
+  router.use("/", createWebhookRoute());
   return router;
 }

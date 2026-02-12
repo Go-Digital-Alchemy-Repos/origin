@@ -4,7 +4,7 @@
 
 ORIGIN is a modern website platform that replaces WordPress. It provides a modular architecture, visual page builder, and enterprise-grade infrastructure for building, managing, and scaling websites.
 
-**Current State**: MVP with authentication (BetterAuth), multi-tenant workspaces, role-based access control, marketing site, app dashboard, module browser, docs library, and modular server architecture.
+**Current State**: MVP with authentication (BetterAuth), multi-tenant workspaces, role-based access control, marketing site, app dashboard, module browser, docs library, marketplace framework, Help & Resources, and modular server architecture.
 
 ## Tech Stack
 
@@ -37,6 +37,9 @@ client/src/
     sites.tsx          # Site management (/app/sites)
     modules.tsx        # Module browser (/app/modules)
     docs.tsx           # Docs library (/app/docs)
+    help.tsx           # Help & Resources (/app/help) — filtered by installs
+    marketplace.tsx    # Marketplace browser (/app/marketplace) — install/preview
+    billing.tsx        # Billing page (/app/billing)
     analytics.tsx      # Analytics (/app/analytics)
     settings.tsx       # Settings (/app/settings)
     users-admin.tsx    # User admin (/app/users)
@@ -47,7 +50,7 @@ server/
   auth.ts              # BetterAuth config with Drizzle adapter
   db.ts                # PostgreSQL connection (Drizzle)
   routes.ts            # Route registration (delegates to registry)
-  seed.ts              # Database seed data (admin user, workspace, site)
+  seed.ts              # Database seed data (admin user, workspace, site, marketplace items)
   storage.ts           # Storage interface for all entities
   modules/
     registry.ts        # Route aggregator (registers all modules)
@@ -56,10 +59,11 @@ server/
       validate.ts      # Zod validation middleware
       auth-middleware.ts # requireAuth, requireRole, requireWorkspaceContext
     health/            # Health check module
-    docs/              # Documentation CRUD module
+    docs/              # Documentation CRUD module (enhanced with admin routes)
     modules/           # Platform modules module
     auth/              # Auth/workspace routes module
     billing/           # Stripe billing module (checkout, portal, webhooks)
+    marketplace/       # Marketplace module (items, installs, preview sessions)
 
 shared/
   schema.ts            # Drizzle schema + Zod types for all entities
@@ -74,6 +78,9 @@ docs/
   TENANCY_AND_RBAC.md        # Tenancy model and RBAC docs
   APP_SHELL_NAV.md           # App shell navigation and role gating
   BILLING_STRIPE.md          # Stripe billing setup, products, webhook events
+  DOCS_LIBRARY_SYSTEM.md     # Docs Library system architecture
+  RESOURCE_DOCS_SYSTEM.md    # Help & Resources filtered docs system
+  MARKETPLACE_FRAMEWORK.md   # Marketplace framework architecture
 ```
 
 ## Database Tables
@@ -86,11 +93,14 @@ docs/
 - `memberships` — User-workspace-role links
 - `sites` — Websites owned by workspaces
 - `audit_log` — Auth and workspace event audit trail
-- `doc_entries` — In-app documentation
+- `doc_entries` — In-app documentation (developer + help types)
 - `origin_modules` — Platform module registry
 - `stripe_customers` — Workspace-to-Stripe customer mapping
 - `subscriptions` — Subscription state (webhook-driven)
 - `entitlements` — Feature flags and limits per workspace
+- `marketplace_items` — Marketplace catalog (site-kits, sections, widgets, apps, add-ons)
+- `marketplace_installs` — Per-workspace item installations
+- `preview_sessions` — Non-destructive preview session state
 
 ## Key Patterns
 
@@ -113,12 +123,32 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - `/` — Marketing landing page (public)
 - `/login` — Authentication page (login/register)
 - `/app` — Dashboard (requires auth)
-- `/app/*` — Client workspace pages (sidebar layout)
+- `/app/marketplace` — Marketplace browser
+- `/app/help` — Help & Resources (filtered by installs)
+- `/app/docs` — Docs Library (all docs, developer-facing)
+- `/app/billing` — Billing page
 - `/app/studio` — Platform Studio dashboard (SUPER_ADMIN/AGENCY_ADMIN only)
 - `/app/studio/*` — Platform Studio pages
 - `/api/auth/*` — BetterAuth endpoints
 - `/api/user/*` — User/workspace endpoints
-- `/api/*` — Other API endpoints
+- `/api/docs/*` — Documentation endpoints
+- `/api/marketplace/*` — Marketplace endpoints
+- `/api/billing/*` — Billing endpoints
+- `/api/webhooks/stripe` — Stripe webhook endpoint
+
+### Documentation System
+- **Docs Library** (`/app/docs`): All developer docs, accessible from Studio sidebar
+- **Help & Resources** (`/app/help`): Client-facing help docs, filtered by installed marketplace items
+- Doc types: `developer` (Docs Library) and `help` (Help & Resources)
+- Marketplace-category docs only visible when the corresponding item is installed
+- Admin CRUD routes gated by SUPER_ADMIN/AGENCY_ADMIN role
+
+### Marketplace
+- Item types: site-kit, section, widget, app, add-on
+- Free items install immediately; paid items require purchase
+- All items support non-destructive preview before install
+- Install/uninstall is per-workspace
+- Each item can have an associated help doc via doc_slug
 
 ### App Shell Navigation
 - Dual-mode sidebar: Client Workspace view + Platform Studio view
@@ -139,10 +169,34 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - SUPER_ADMIN: `admin@digitalalchemy.dev` / `OriginAdmin2026!`
 - Demo workspace: "Digital Alchemy" (enterprise plan)
 - Demo site: "Demo Site" (published)
-- 10 doc entries (including auth/tenancy/nav/billing docs)
+- 18 doc entries (developer + help + marketplace docs)
 - 12 platform modules
+- 14 marketplace items (2 site kits, 4 sections, 3 widgets, 2 apps, 3 add-ons)
+
+## Docs Update Checklist
+
+Every future prompt that modifies ORIGIN must verify:
+1. If a new module/feature is added, create a corresponding doc entry in seed
+2. If a new API endpoint is added, update the API Reference doc
+3. If a marketplace item is added, create a help doc with category "marketplace"
+4. If architecture changes, update the Architecture Overview doc
+5. If navigation changes, update the App Shell & Navigation doc
+6. Create/update corresponding /docs/*.md file
+7. Update replit.md with recent changes
 
 ## Recent Changes
+
+- 2026-02-12: Documentation systems + Marketplace framework
+  - Fixed webhook routing bug (double /webhooks prefix)
+  - Enhanced docs module: full CRUD, search, type/category filtering, role-gated admin routes
+  - Created marketplace module: items, installs, preview sessions
+  - Added marketplace_items, marketplace_installs, preview_sessions DB tables
+  - Built Help & Resources page filtered by installed marketplace items
+  - Built Marketplace browser with category tabs, item detail, install/uninstall, preview modal
+  - Seeded 14 marketplace items across all types
+  - Seeded 4 marketplace-specific help docs + 4 system doc entries
+  - Created DOCS_LIBRARY_SYSTEM.md, RESOURCE_DOCS_SYSTEM.md, MARKETPLACE_FRAMEWORK.md
+  - Non-destructive: existing data preserved
 
 - 2026-02-12: Stripe billing foundation
   - Added stripe_customers, subscriptions, entitlements DB tables

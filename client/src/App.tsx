@@ -41,6 +41,8 @@ import SettingsPage from "@/pages/settings";
 import UsersAdminPage from "@/pages/users-admin";
 import StubPage from "@/pages/stub";
 import BillingPage from "@/pages/billing";
+import HelpPage from "@/pages/help";
+import MarketplacePage from "@/pages/marketplace";
 
 function AppRouter() {
   return (
@@ -58,9 +60,9 @@ function AppRouter() {
       <Route path="/app/media">{() => <StubPage title="Media" description="Upload, organize, and manage your media assets. Images, videos, documents, and more." icon="image" />}</Route>
       <Route path="/app/forms">{() => <StubPage title="Forms" description="Build custom forms with validation, conditional logic, and submission workflows." icon="clipboard-list" />}</Route>
       <Route path="/app/menus">{() => <StubPage title="Menus" description="Design and manage navigation menus for your sites. Drag and drop menu builder." icon="menu" />}</Route>
-      <Route path="/app/marketplace">{() => <StubPage title="Marketplace" description="Browse and install modules, themes, and integrations to extend your site." icon="store" />}</Route>
+      <Route path="/app/marketplace" component={MarketplacePage} />
       <Route path="/app/crm">{() => <StubPage title="CRM" description="Customer relationship management. Track leads, contacts, and interactions." icon="contact" locked />}</Route>
-      <Route path="/app/help">{() => <StubPage title="Help & Resources" description="Documentation, tutorials, and support resources to help you get the most from ORIGIN." icon="help-circle" />}</Route>
+      <Route path="/app/help" component={HelpPage} />
       <Route path="/app/studio">{() => <StubPage title="Platform Dashboard" description="Overview of all clients, sites, and platform health across your ORIGIN instance." icon="layout-dashboard" studio />}</Route>
       <Route path="/app/studio/clients">{() => <StubPage title="Clients" description="Manage client workspaces, onboarding, and team access across the platform." icon="building-2" studio />}</Route>
       <Route path="/app/studio/sites">{() => <StubPage title="Sites" description="View and manage all sites across every workspace. Global site administration." icon="globe" studio />}</Route>

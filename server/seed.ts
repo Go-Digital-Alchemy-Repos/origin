@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { docEntries, originModules, users, workspaces, memberships, sites, auditLog } from "@shared/schema";
+import { docEntries, originModules, users, workspaces, memberships, sites, auditLog, marketplaceItems } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { log } from "./index";
 import { auth } from "./auth";
@@ -456,6 +456,457 @@ See /docs/BILLING_STRIPE.md for complete API reference and setup guide.`,
     sortOrder: 9,
     isPublished: true,
   },
+  {
+    title: "Docs Library System",
+    slug: "docs-library-system",
+    content: `The ORIGIN Docs Library is a Super Admin-facing documentation system stored in the database with category-based organization.
+
+## Overview
+
+All docs are stored in the doc_entries table with category, type, and tag-based organization. Two types exist:
+
+- **developer** — Shown in Super Admin Docs Library (/app/docs)
+- **help** — Shown in client Help & Resources (/app/help)
+
+## Categories
+
+Getting Started, Architecture, Modules, API Reference, Guides, Help, Marketplace.
+
+## Admin Management
+
+SUPER_ADMIN and AGENCY_ADMIN users can create, update, and delete docs via the API:
+
+- POST /api/docs — Create doc
+- PATCH /api/docs/:id — Update doc
+- DELETE /api/docs/:id — Delete doc
+
+## Search
+
+Search via ?q= parameter matches against title, content, and category fields.
+
+See /docs/DOCS_LIBRARY_SYSTEM.md for complete reference.`,
+    category: "guides",
+    type: "developer",
+    tags: ["docs", "library", "admin", "search"],
+    sortOrder: 10,
+    isPublished: true,
+  },
+  {
+    title: "Help & Resources System",
+    slug: "resource-docs-system",
+    content: `The Help & Resources page provides client-facing documentation filtered by installed marketplace items.
+
+## How It Works
+
+- General help docs (type: help, category: help/getting-started/guides) are always visible
+- Marketplace-specific docs (category: marketplace) only appear when the corresponding item is installed
+
+## Filtering
+
+1. Fetch help docs from /api/docs?type=help
+2. Fetch installed items from /api/marketplace/installs
+3. Match marketplace docs by doc_slug on installed items
+4. Show matching marketplace docs + all general help docs
+
+## Future
+
+- Entitlement-based filtering from the entitlements table
+- Builder inspector contextual help
+- Component-level documentation
+
+See /docs/RESOURCE_DOCS_SYSTEM.md for complete reference.`,
+    category: "guides",
+    type: "developer",
+    tags: ["docs", "help", "resources", "filtering"],
+    sortOrder: 11,
+    isPublished: true,
+  },
+  {
+    title: "Marketplace Framework",
+    slug: "marketplace-framework",
+    content: `The ORIGIN Marketplace provides a browsable catalog of extensions: Site Kits, Sections, Widgets, Apps, and Add-ons.
+
+## Item Types
+
+- **Site Kit** — Theme + template bundle
+- **Section** — Reusable page section
+- **Widget** — Interactive embeddable component
+- **App** — Full application/integration
+- **Add-on** — Small utility enhancement
+
+## Key Features
+
+- Unlimited preview before purchase
+- Free items install immediately
+- Paid items via Stripe checkout
+- Non-destructive preview overlays
+- Install/uninstall per workspace
+
+## API
+
+- GET /api/marketplace/items — Browse catalog
+- POST /api/marketplace/install — Install item
+- POST /api/marketplace/preview/start — Start preview
+
+See /docs/MARKETPLACE_FRAMEWORK.md for complete reference.`,
+    category: "guides",
+    type: "developer",
+    tags: ["marketplace", "extensions", "install", "preview"],
+    sortOrder: 12,
+    isPublished: true,
+  },
+  {
+    title: "Using the Marketplace",
+    slug: "help-marketplace",
+    content: `Browse, preview, and install extensions from the ORIGIN Marketplace.
+
+## Browsing
+
+Visit the Marketplace from the sidebar to browse available items. Use the category tabs to filter by type:
+
+- Site Kits — Complete website themes and templates
+- Sections — Pre-built page sections you can add to any page
+- Widgets — Interactive components like search, chat, or social feeds
+- Apps — Full applications to extend your workspace
+- Add-ons — Small tools and utilities
+
+## Previewing
+
+Click any item to view its details. Use the "Preview" button to see how it would look on your site without making any changes. Previews are completely non-destructive.
+
+## Installing
+
+- **Free items**: Click "Install Free" to add immediately
+- **Paid items**: Click "Purchase" to complete checkout, then the item is installed
+
+## Managing Installed Items
+
+Use the "Installed" tab to see all items currently active in your workspace. You can uninstall items at any time.`,
+    category: "help",
+    type: "help",
+    tags: ["marketplace", "install", "preview", "extensions"],
+    sortOrder: 13,
+    isPublished: true,
+  },
+];
+
+const seedMarketplaceItems = [
+  {
+    type: "site-kit",
+    name: "Modern Business",
+    slug: "modern-business",
+    description: "A clean, professional theme with hero sections, team bios, and service showcases.",
+    longDescription: "The Modern Business site kit gives you everything you need to launch a professional business website. Includes a stunning hero section, team member profiles, service cards, testimonial carousels, and a contact form. Fully responsive and optimized for conversion.",
+    icon: "briefcase",
+    isFree: false,
+    price: 4900,
+    version: "1.2.0",
+    status: "published",
+    category: "business",
+    tags: ["business", "professional", "corporate", "responsive"],
+    author: "ORIGIN",
+    docSlug: "help-sitekit-modern-business",
+  },
+  {
+    type: "site-kit",
+    name: "Creative Portfolio",
+    slug: "creative-portfolio",
+    description: "Showcase your work with a beautiful portfolio layout and project galleries.",
+    longDescription: "The Creative Portfolio site kit is designed for designers, photographers, and creative professionals. Features masonry galleries, project case studies, about pages, and smooth animations. Dark mode optimized.",
+    icon: "palette",
+    isFree: true,
+    price: 0,
+    version: "1.0.0",
+    status: "published",
+    category: "creative",
+    tags: ["portfolio", "creative", "gallery", "design"],
+    author: "ORIGIN",
+    docSlug: "help-sitekit-creative-portfolio",
+  },
+  {
+    type: "section",
+    name: "Hero Banner",
+    slug: "hero-banner",
+    description: "Full-width hero section with background image, overlay, headline, and CTA buttons.",
+    icon: "image",
+    isFree: true,
+    price: 0,
+    version: "1.0.0",
+    status: "published",
+    category: "headers",
+    tags: ["hero", "banner", "header", "cta"],
+    author: "ORIGIN",
+  },
+  {
+    type: "section",
+    name: "Testimonials Grid",
+    slug: "testimonials-grid",
+    description: "Display customer testimonials in a responsive grid with avatars and ratings.",
+    icon: "message-square",
+    isFree: true,
+    price: 0,
+    version: "1.0.0",
+    status: "published",
+    category: "social-proof",
+    tags: ["testimonials", "reviews", "social-proof"],
+    author: "ORIGIN",
+  },
+  {
+    type: "section",
+    name: "Pricing Table",
+    slug: "pricing-table",
+    description: "Configurable pricing table with plan comparison, feature lists, and CTA buttons.",
+    icon: "credit-card",
+    isFree: false,
+    price: 1900,
+    version: "1.1.0",
+    status: "published",
+    category: "commerce",
+    tags: ["pricing", "plans", "comparison"],
+    author: "ORIGIN",
+  },
+  {
+    type: "section",
+    name: "FAQ Accordion",
+    slug: "faq-accordion",
+    description: "Expandable FAQ section with smooth animations and search functionality.",
+    icon: "help-circle",
+    isFree: true,
+    price: 0,
+    version: "1.0.0",
+    status: "published",
+    category: "content",
+    tags: ["faq", "accordion", "questions"],
+    author: "ORIGIN",
+  },
+  {
+    type: "widget",
+    name: "Live Chat",
+    slug: "live-chat",
+    description: "Embeddable live chat widget with agent routing and offline messaging.",
+    icon: "message-circle",
+    isFree: false,
+    price: 2900,
+    version: "2.0.0",
+    status: "published",
+    category: "communication",
+    tags: ["chat", "support", "messaging", "live"],
+    author: "ORIGIN",
+    docSlug: "help-widget-live-chat",
+  },
+  {
+    type: "widget",
+    name: "Search Bar",
+    slug: "search-bar-widget",
+    description: "Full-text search widget with instant results, filters, and keyboard navigation.",
+    icon: "search",
+    isFree: true,
+    price: 0,
+    version: "1.0.0",
+    status: "published",
+    category: "navigation",
+    tags: ["search", "fulltext", "navigation"],
+    author: "ORIGIN",
+  },
+  {
+    type: "widget",
+    name: "Social Feed",
+    slug: "social-feed",
+    description: "Display social media posts from multiple platforms in a unified feed.",
+    icon: "share-2",
+    isFree: false,
+    price: 1900,
+    version: "1.0.0",
+    status: "published",
+    category: "social",
+    tags: ["social", "feed", "instagram", "twitter"],
+    author: "ORIGIN",
+  },
+  {
+    type: "app",
+    name: "CRM Suite",
+    slug: "crm-suite",
+    description: "Complete customer relationship management with contacts, deals, and pipelines.",
+    longDescription: "The CRM Suite app adds full customer relationship management to your workspace. Track leads through customizable pipelines, manage contact profiles, log interactions, and generate reports. Integrates with forms and email marketing.",
+    icon: "contact",
+    isFree: false,
+    price: 7900,
+    version: "1.0.0",
+    status: "published",
+    category: "business",
+    tags: ["crm", "contacts", "sales", "pipeline"],
+    author: "ORIGIN",
+    docSlug: "help-app-crm-suite",
+  },
+  {
+    type: "app",
+    name: "Email Marketing",
+    slug: "email-marketing",
+    description: "Send campaigns, automate sequences, and manage subscriber lists.",
+    longDescription: "The Email Marketing app lets you create beautiful email campaigns with a drag-and-drop editor, set up automated drip sequences, segment your audience, and track open/click rates. Includes templates and A/B testing.",
+    icon: "mail",
+    isFree: false,
+    price: 4900,
+    version: "1.0.0",
+    status: "published",
+    category: "marketing",
+    tags: ["email", "campaigns", "automation", "marketing"],
+    author: "ORIGIN",
+  },
+  {
+    type: "add-on",
+    name: "SEO Toolkit Pro",
+    slug: "seo-toolkit-pro",
+    description: "Advanced SEO with structured data, sitemap generation, and search analytics.",
+    icon: "bar-chart",
+    isFree: false,
+    price: 2900,
+    version: "2.0.0",
+    status: "published",
+    category: "seo",
+    tags: ["seo", "analytics", "search", "optimization"],
+    author: "ORIGIN",
+  },
+  {
+    type: "add-on",
+    name: "Redirects Manager",
+    slug: "redirects-manager",
+    description: "Manage URL redirects with bulk import, regex patterns, and 301/302 support.",
+    icon: "arrow-right-left",
+    isFree: true,
+    price: 0,
+    version: "1.0.0",
+    status: "published",
+    category: "seo",
+    tags: ["redirects", "seo", "urls", "301"],
+    author: "ORIGIN",
+  },
+  {
+    type: "add-on",
+    name: "Cookie Consent",
+    slug: "cookie-consent",
+    description: "GDPR-compliant cookie consent banner with customizable categories and preferences.",
+    icon: "cookie",
+    isFree: true,
+    price: 0,
+    version: "1.0.0",
+    status: "published",
+    category: "compliance",
+    tags: ["gdpr", "cookies", "consent", "privacy"],
+    author: "ORIGIN",
+  },
+];
+
+const seedMarketplaceDocs = [
+  {
+    title: "Modern Business Site Kit",
+    slug: "help-sitekit-modern-business",
+    content: `Get started with the Modern Business site kit.
+
+## What's Included
+
+- Hero section with full-width background
+- Team member profile cards
+- Service showcase grid
+- Testimonial carousel
+- Contact form with validation
+- Footer with social links
+
+## Setup
+
+After installing, visit Pages to see the pre-built pages. Customize colors, fonts, and content through the page builder.
+
+## Customization
+
+All sections are fully editable. Swap images, change copy, adjust colors, and rearrange sections using drag and drop.`,
+    category: "marketplace",
+    type: "help",
+    tags: ["site-kit", "business", "theme"],
+    sortOrder: 100,
+    isPublished: true,
+  },
+  {
+    title: "Creative Portfolio Site Kit",
+    slug: "help-sitekit-creative-portfolio",
+    content: `Get started with the Creative Portfolio site kit.
+
+## What's Included
+
+- Masonry gallery layout
+- Project case study template
+- About page with timeline
+- Contact page
+- Dark mode optimized design
+
+## Setup
+
+After installing, the portfolio pages are ready to customize. Add your projects, update your bio, and adjust the color scheme.
+
+## Tips
+
+- Use high-resolution images for the gallery
+- Write detailed case studies for each project
+- The dark mode design works best with high-contrast images`,
+    category: "marketplace",
+    type: "help",
+    tags: ["site-kit", "portfolio", "creative"],
+    sortOrder: 101,
+    isPublished: true,
+  },
+  {
+    title: "Live Chat Widget",
+    slug: "help-widget-live-chat",
+    content: `Set up and configure the Live Chat widget for your site.
+
+## Getting Started
+
+After installing, the chat widget appears in the bottom-right corner of your site. Configure agent routing and customize the appearance.
+
+## Features
+
+- Real-time messaging with visitors
+- Agent routing and queues
+- Offline message collection
+- Customizable colors and position
+- Typing indicators
+
+## Configuration
+
+Access chat settings from your workspace Settings page. Set business hours, customize the welcome message, and configure notification preferences.`,
+    category: "marketplace",
+    type: "help",
+    tags: ["widget", "chat", "support"],
+    sortOrder: 102,
+    isPublished: true,
+  },
+  {
+    title: "CRM Suite App",
+    slug: "help-app-crm-suite",
+    content: `Manage customer relationships with the CRM Suite.
+
+## Getting Started
+
+After installing, access the CRM from the sidebar. The CRM module unlocks the previously locked CRM navigation item.
+
+## Features
+
+- Contact management with custom fields
+- Deal pipeline with drag-and-drop stages
+- Activity logging and reminders
+- Import/export contacts via CSV
+- Integration with forms
+
+## Pipeline Stages
+
+Default pipeline: Lead > Qualified > Proposal > Negotiation > Closed Won / Closed Lost
+
+Customize stages in CRM Settings.`,
+    category: "marketplace",
+    type: "help",
+    tags: ["app", "crm", "contacts", "sales"],
+    sortOrder: 103,
+    isPublished: true,
+  },
 ];
 
 const seedModules = [
@@ -678,6 +1129,26 @@ export async function seedDatabase() {
       log(`Seeded ${seedModules.length} modules`, "seed");
     } else {
       log(`Skipping modules seed (${existingModules.length} already exist)`, "seed");
+    }
+
+    const existingMpItems = await db.select().from(marketplaceItems);
+    const existingMpSlugs = new Set(existingMpItems.map((i) => i.slug));
+    const newMpItems = seedMarketplaceItems.filter((i) => !existingMpSlugs.has(i.slug));
+    if (newMpItems.length > 0) {
+      log(`Seeding ${newMpItems.length} new marketplace items...`, "seed");
+      await db.insert(marketplaceItems).values(newMpItems);
+      log(`Seeded ${newMpItems.length} marketplace items`, "seed");
+    } else {
+      log(`Skipping marketplace items seed (all ${seedMarketplaceItems.length} already exist)`, "seed");
+    }
+
+    const existingMpDocs = seedMarketplaceDocs.filter((d) => !existingSlugs.has(d.slug));
+    if (existingMpDocs.length > 0) {
+      log(`Seeding ${existingMpDocs.length} new marketplace doc entries...`, "seed");
+      await db.insert(docEntries).values(existingMpDocs);
+      log(`Seeded ${existingMpDocs.length} marketplace doc entries`, "seed");
+    } else {
+      log(`Skipping marketplace docs seed (all already exist)`, "seed");
     }
 
     const admin = await seedSuperAdmin();
