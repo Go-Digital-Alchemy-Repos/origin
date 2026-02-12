@@ -367,6 +367,45 @@ export function renderPublicPage(opts: RenderOptions): string {
 </html>`;
 }
 
+export function buildHeaderNavHtml(
+  site: { name: string },
+  sitePages: Array<{ slug: string; title: string }>,
+  headerMenu?: MenuData,
+  activeSlug?: string,
+): string {
+  if (headerMenu && headerMenu.items.length > 0) {
+    return `<nav style="background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px">
+        <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:24px;height:56px">
+          <strong style="font-size:0.875rem"><a href="/" style="text-decoration:none;color:inherit">${escapeHtml(site.name)}</a></strong>
+          <div style="margin-left:auto">
+            ${renderMenuItems(headerMenu.items, null, sitePages)}
+          </div>
+        </div>
+      </nav>`;
+  }
+  if (sitePages.length > 1) {
+    return `<nav style="background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px">
+        <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:24px;height:56px">
+          <strong style="font-size:0.875rem">${escapeHtml(site.name)}</strong>
+          <div style="display:flex;gap:16px;margin-left:auto">
+            ${sitePages.map((p) => `<a href="/${p.slug}" style="font-size:0.875rem;text-decoration:none;color:${p.slug === activeSlug ? "#2563eb" : "#6b7280"};font-weight:${p.slug === activeSlug ? "600" : "400"}">${escapeHtml(p.title)}</a>`).join("")}
+          </div>
+        </div>
+      </nav>`;
+  }
+  return "";
+}
+
+export function buildFooterHtml(
+  sitePages: Array<{ slug: string; title: string }>,
+  footerMenu?: MenuData,
+): string {
+  if (footerMenu && footerMenu.items.length > 0) {
+    return renderFooterMenu(footerMenu.items, sitePages);
+  }
+  return "";
+}
+
 export function render404Page(siteName: string): string {
   return `<!DOCTYPE html>
 <html lang="en">

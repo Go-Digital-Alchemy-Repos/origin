@@ -1,10 +1,12 @@
 import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 import { publicSiteService, type ResolvedSite } from "./publicSite.service";
-import { renderPublicPage, render404Page } from "./publicSite.renderer";
+import { renderPublicPage, render404Page, buildHeaderNavHtml, buildFooterHtml } from "./publicSite.renderer";
 import { setCacheHeaders, setNoCacheHeaders } from "./publicSite.cache";
 import { redirectsService } from "../redirects/redirects.service";
 import { seoService } from "../seo/seo.service";
+import { blogService } from "../blog/blog.service";
+import { renderBlogIndex, renderBlogPost } from "../blog/blog.renderer";
 import { log } from "../../index";
 
 declare global {
@@ -86,6 +88,83 @@ export function publicSiteRoutes(): Router {
     } catch (err) {
       log(`Robots.txt error: ${err}`, "public");
       res.status(500).send("Error generating robots.txt");
+    }
+  });
+
+  router.get("/blog", async (req: Request, res: Response) => {
+    const site = req.publicSite;
+    if (!site) return res.status(404).send(render404Page("ORIGIN"));
+
+    try {
+      const [posts, headerMenu, footerMenu, seoSettings, allPages] = await Promise.all([
+        blogService.getPublishedPosts(site.id),
+        publicSiteService.getMenuBySlot(site.id, "header"),
+        publicSiteService.getMenuBySlot(site.id, "footer"),
+        seoService.getSeoSettings(site.id),
+        publicSiteService.getPublishedPages(site.id),
+      ]);
+
+      const baseUrl = buildBaseUrl(req, site);
+      const headerNav = buildHeaderNavHtml(site, allPages, headerMenu ?? undefined, "blog");
+      const footerHtml = buildFooterHtml(allPages, footerMenu ?? undefined);
+
+      setCacheHeaders(res, { maxAge: 60 });
+      const html = renderBlogIndex(posts, {
+        site: { name: site.name, slug: site.slug },
+        seoDefaults: seoSettings ? {
+          titleSuffix: seoSettings.titleSuffix,
+          defaultOgImage: seoSettings.defaultOgImage,
+          defaultIndexable: seoSettings.defaultIndexable ?? true,
+        } : undefined,
+        baseUrl,
+        headerNav,
+        footerHtml,
+      });
+      res.type("html").send(html);
+    } catch (err) {
+      log(`Blog index render error: ${err}`, "public");
+      res.status(500).send(render404Page(site.name));
+    }
+  });
+
+  router.get("/blog/:postSlug", async (req: Request, res: Response) => {
+    const site = req.publicSite;
+    if (!site) return res.status(404).send(render404Page("ORIGIN"));
+
+    try {
+      const [post, headerMenu, footerMenu, seoSettings, allPages] = await Promise.all([
+        blogService.getPublishedPost(site.id, req.params.postSlug),
+        publicSiteService.getMenuBySlot(site.id, "header"),
+        publicSiteService.getMenuBySlot(site.id, "footer"),
+        seoService.getSeoSettings(site.id),
+        publicSiteService.getPublishedPages(site.id),
+      ]);
+
+      if (!post) {
+        setNoCacheHeaders(res);
+        return res.status(404).send(render404Page(site.name));
+      }
+
+      const baseUrl = buildBaseUrl(req, site);
+      const headerNav = buildHeaderNavHtml(site, allPages, headerMenu ?? undefined, "blog");
+      const footerHtml = buildFooterHtml(allPages, footerMenu ?? undefined);
+
+      setCacheHeaders(res, { maxAge: 60 });
+      const html = renderBlogPost(post, {
+        site: { name: site.name, slug: site.slug },
+        seoDefaults: seoSettings ? {
+          titleSuffix: seoSettings.titleSuffix,
+          defaultOgImage: seoSettings.defaultOgImage,
+          defaultIndexable: seoSettings.defaultIndexable ?? true,
+        } : undefined,
+        baseUrl,
+        headerNav,
+        footerHtml,
+      });
+      res.type("html").send(html);
+    } catch (err) {
+      log(`Blog post render error: ${err}`, "public");
+      res.status(500).send(render404Page(site.name));
     }
   });
 

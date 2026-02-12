@@ -54,6 +54,7 @@ import MenusPage from "@/pages/menus";
 import FormsPage from "@/pages/forms";
 import RedirectsPage from "@/pages/redirects";
 import SiteSeoPage from "@/pages/site-seo";
+import BlogPage from "@/pages/blog";
 
 function AppRouter() {
   return (
@@ -72,7 +73,7 @@ function AppRouter() {
       <Route path="/app/collections/:collectionId/items/:itemId" component={CollectionItemEditorPage} />
       <Route path="/app/collections/:collectionId" component={CollectionDetailPage} />
       <Route path="/app/collections" component={CollectionsPage} />
-      <Route path="/app/blog">{() => <StubPage title="Blog" description="Create and manage blog posts. Write, schedule, and publish content with rich editing." icon="pen-tool" />}</Route>
+      <Route path="/app/blog" component={BlogPage} />
       <Route path="/app/media">{() => <StubPage title="Media" description="Upload, organize, and manage your media assets. Images, videos, documents, and more." icon="image" />}</Route>
       <Route path="/app/forms" component={FormsPage} />
       <Route path="/app/redirects" component={RedirectsPage} />

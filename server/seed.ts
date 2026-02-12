@@ -1444,6 +1444,97 @@ ORIGIN automatically generates and serves:
     sortOrder: 23,
     isPublished: true,
   },
+  {
+    title: "Blog System",
+    slug: "blog-system",
+    content: `ORIGIN's Blog System provides a turnkey blogging solution built on top of the Collections framework.
+
+## Architecture
+
+The blog system uses a special "blog-posts" collection with a predefined schema and adds public rendering routes for blog index and detail pages.
+
+### Server Module
+
+\`server/modules/blog/\` — Blog setup wizard, published post queries, and HTML renderers
+
+### API Routes
+
+- GET /api/cms/sites/:siteId/blog/status — check if blog exists, get post counts
+- POST /api/cms/sites/:siteId/blog/setup — one-click blog wizard (creates collection + page)
+- GET /api/cms/public/blog/:siteId/posts — list published posts (public)
+- GET /api/cms/public/blog/:siteId/posts/:slug — get single published post (public)
+
+### Blog Post Schema Fields
+
+title, slug, excerpt, body, featured_image, author, category, tags, published_date, seo_title, seo_description, og_image
+
+### Public Rendering
+
+- /blog — Blog index listing with post cards, categories, dates
+- /blog/:slug — Full article page with Article structured data (schema.org)
+- Both routes handled before the page catch-all in publicSite routes
+
+### Article Schema Markup
+
+Each blog post detail page includes \`application/ld+json\` structured data with:
+- @type: Article
+- headline, description, image, author, datePublished, dateModified, publisher
+
+### SEO Integration
+
+Blog posts support seo_title, seo_description, og_image overrides. Falls back to post title/excerpt/featured_image when not set.`,
+    category: "developer",
+    type: "developer",
+    tags: ["blog", "collections", "seo", "structured-data", "article-schema"],
+    sortOrder: 24,
+    isPublished: true,
+  },
+  {
+    title: "Setting Up Your Blog",
+    slug: "help-blog",
+    content: `Create a professional blog for your site in just one click.
+
+## Getting Started
+
+1. Go to **Blog** in the sidebar
+2. Click **Create Blog** to run the setup wizard
+3. Start writing posts in the Blog Posts collection
+
+## What the Wizard Creates
+
+- A **Blog Posts** collection with all the fields you need: title, slug, excerpt, body, featured image, author, category, tags, dates, and SEO fields
+- A **Blog page** that's automatically published
+- **Public templates** for your blog listing (/blog) and individual articles (/blog/your-post-slug)
+
+## Writing Posts
+
+1. From the Blog page, click **New Post** or **Manage Collection**
+2. Fill in the post fields — at minimum, title, slug, and body
+3. Set the status to **Published** when ready
+4. Your post will appear at /blog/your-slug on your public site
+
+## SEO for Blog Posts
+
+Each post has optional SEO fields:
+- **SEO Title** — Custom title for search engines
+- **SEO Description** — Meta description for search results
+- **OG Image** — Social sharing image override
+
+If not set, the post's title, excerpt, and featured image are used automatically.
+
+## Categories & Tags
+
+Organize posts with categories (select from predefined options) and tags (comma-separated). Categories appear as badges on post cards.
+
+## Article Schema
+
+Blog posts automatically include Article structured data (schema.org) for rich search results, including headline, author, dates, and images.`,
+    category: "help",
+    type: "help",
+    tags: ["blog", "posts", "writing", "seo", "categories"],
+    sortOrder: 24,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [
