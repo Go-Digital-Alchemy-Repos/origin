@@ -17,6 +17,7 @@ import { createBlogModule } from "./blog";
 import { publicSitePreviewRoutes } from "./publicSite";
 import { createSiteKitsModule } from "./siteKits";
 import { createCrmModule } from "./apps/crm";
+import { createMigrationModule } from "./migration";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -39,6 +40,7 @@ export function registerAllModules(): Router {
   api.use(publicSitePreviewRoutes());
   api.use(createSiteKitsModule());
   api.use(createCrmModule());
+  api.use(createMigrationModule());
 
   return api;
 }

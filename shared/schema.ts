@@ -828,3 +828,42 @@ export const insertCrmNoteSchema = createInsertSchema(crmNotes).omit({
 
 export type InsertCrmNote = z.infer<typeof insertCrmNoteSchema>;
 export type CrmNote = typeof crmNotes.$inferSelect;
+
+export const migrationJobs = pgTable("migration_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  createdByUserId: varchar("created_by_user_id").references(() => users.id),
+  source: text("source").notNull().default("wordpress"),
+  status: text("status").notNull().default("pending"),
+  fileName: text("file_name"),
+  summary: jsonb("summary").default(sql`'{}'::jsonb`),
+  createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const insertMigrationJobSchema = createInsertSchema(migrationJobs).omit({
+  id: true,
+  createdAt: true,
+  completedAt: true,
+});
+
+export type InsertMigrationJob = z.infer<typeof insertMigrationJobSchema>;
+export type MigrationJob = typeof migrationJobs.$inferSelect;
+
+export const migrationLogs = pgTable("migration_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => migrationJobs.id, { onDelete: "cascade" }),
+  level: text("level").notNull().default("info"),
+  message: text("message").notNull(),
+  meta: jsonb("meta").default(sql`'{}'::jsonb`),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMigrationLogSchema = createInsertSchema(migrationLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertMigrationLog = z.infer<typeof insertMigrationLogSchema>;
+export type MigrationLog = typeof migrationLogs.$inferSelect;

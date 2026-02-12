@@ -43,6 +43,7 @@ import StubPage from "@/pages/stub";
 import SiteKitsPage from "@/pages/site-kits";
 import CrmLeadsPage from "@/pages/crm-leads";
 import CrmContactsPage from "@/pages/crm-contacts";
+import MigrationPage from "@/pages/migration";
 import BillingPage from "@/pages/billing";
 import HelpPage from "@/pages/help";
 import MarketplacePage from "@/pages/marketplace";
@@ -82,6 +83,7 @@ function AppRouter() {
       <Route path="/app/redirects" component={RedirectsPage} />
       <Route path="/app/menus" component={MenusPage} />
       <Route path="/app/marketplace" component={MarketplacePage} />
+      <Route path="/app/migration" component={MigrationPage} />
       <Route path="/app/crm/leads" component={CrmLeadsPage} />
       <Route path="/app/crm/contacts" component={CrmContactsPage} />
       <Route path="/app/crm"><Redirect to="/app/crm/leads" /></Route>

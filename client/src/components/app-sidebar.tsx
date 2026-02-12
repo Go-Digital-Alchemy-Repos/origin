@@ -28,6 +28,7 @@ import {
   Palette,
   ArrowRightLeft,
   Search,
+  FileUp,
 } from "lucide-react";
 import {
   Sidebar,
@@ -69,6 +70,7 @@ const clientNav: NavItem[] = [
 
 const clientSecondaryNav: NavItem[] = [
   { title: "Marketplace", href: "/app/marketplace", icon: Store },
+  { title: "Migration", href: "/app/migration", icon: FileUp },
   { title: "Leads", href: "/app/crm/leads", icon: Contact },
   { title: "Contacts", href: "/app/crm/contacts", icon: Users },
 ];

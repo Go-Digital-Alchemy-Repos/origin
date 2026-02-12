@@ -1672,6 +1672,51 @@ Connect a form to the CRM by configuring the **CRM Lead Mapping** in the form se
     sortOrder: 25,
     isPublished: true,
   },
+  {
+    title: "Migrating from WordPress",
+    slug: "migrating-from-wordpress",
+    content: `Move your WordPress site to ORIGIN with the built-in migration tool.
+
+## Before You Start
+
+1. In your WordPress admin, go to **Tools → Export**
+2. Select **All content**
+3. Click **Download Export File**
+4. You'll get an XML file containing your pages, posts, and media references
+
+## Running the Import
+
+1. Navigate to **Migration** in the sidebar
+2. Select the ORIGIN site that should receive the content
+3. Upload your WordPress XML export file (max 50MB)
+4. Click **Start Import**
+
+## What Gets Imported
+
+### Pages
+WordPress pages become ORIGIN CMS pages in DRAFT status. The page content (HTML) is preserved in a rich-text block. SEO title and description are carried over.
+
+### Blog Posts
+WordPress posts are imported into the Blog collection. Title, slug, body, excerpt, author, categories, and tags are all mapped. Posts start as DRAFT items.
+
+### Media References
+Media attachment URLs from WordPress are logged for reference. You can use these URLs to manually re-upload images and update references.
+
+### Redirect Suggestions
+The importer automatically creates redirect suggestions mapping old WordPress URLs to their new ORIGIN equivalents. Review these on the **Redirects** page and accept the ones you want to keep.
+
+## After Import
+
+- Review imported pages in **Pages** and publish when ready
+- Review blog posts in **Collections** → Blog Posts and publish
+- Accept or dismiss redirect suggestions in **Redirects**
+- Update any media references with new URLs`,
+    category: "help",
+    type: "help",
+    tags: ["wordpress", "migration", "import", "redirects"],
+    sortOrder: 26,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [
