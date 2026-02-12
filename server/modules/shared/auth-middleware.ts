@@ -163,6 +163,10 @@ export function requireWorkspaceRole(...allowedRoles: Role[]) {
   };
 }
 
+export function getWorkspaceId(req: Request): string | null {
+  return req.workspace?.id || req.session?.activeWorkspaceId || null;
+}
+
 export function scopeByWorkspace(workspaceId?: string) {
   if (!workspaceId) {
     throw new Error("Workspace ID required for scoped query");

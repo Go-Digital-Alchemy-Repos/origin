@@ -1,11 +1,6 @@
 import { Router } from "express";
 import { blogService } from "./blog.service";
-import { requireAuth, requireWorkspaceContext } from "../shared/auth-middleware";
-import type { Request } from "express";
-
-function getWorkspaceId(req: Request): string | null {
-  return req.workspace?.id || req.session?.activeWorkspaceId || null;
-}
+import { requireAuth, requireWorkspaceContext, getWorkspaceId } from "../shared/auth-middleware";
 
 export function blogRoutes(): Router {
   const router = Router();
@@ -17,10 +12,10 @@ export function blogRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const owns = await blogService.verifySiteOwnership(req.params.siteId, workspaceId);
-        if (!owns) return res.status(403).json({ error: { message: "Access denied" } });
+        if (!owns) return res.status(403).json({ error: { message: "Access denied", code: "FORBIDDEN" } });
 
         const status = await blogService.getBlogStatus(req.params.siteId);
         res.json(status);
@@ -37,16 +32,16 @@ export function blogRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const owns = await blogService.verifySiteOwnership(req.params.siteId, workspaceId);
-        if (!owns) return res.status(403).json({ error: { message: "Access denied" } });
+        if (!owns) return res.status(403).json({ error: { message: "Access denied", code: "FORBIDDEN" } });
 
         const result = await blogService.setupBlog(req.params.siteId, workspaceId, req.user!.id);
         res.status(201).json(result);
       } catch (err: any) {
         if (err.message?.includes("already exists")) {
-          return res.status(409).json({ error: { message: err.message } });
+          return res.status(409).json({ error: { message: err.message, code: "CONFLICT" } });
         }
         next(err);
       }
@@ -70,7 +65,7 @@ export function blogRoutes(): Router {
     async (req, res, next) => {
       try {
         const post = await blogService.getPublishedPost(req.params.siteId, req.params.slug);
-        if (!post) return res.status(404).json({ error: { message: "Post not found" } });
+        if (!post) return res.status(404).json({ error: { message: "Post not found", code: "NOT_FOUND" } });
         res.json(post);
       } catch (err) {
         next(err);

@@ -28,6 +28,20 @@ export interface PublishedPage {
 }
 
 export const publicSiteService = {
+  async resolveSiteBySlug(slug: string): Promise<ResolvedSite | null> {
+    const [site] = await db
+      .select({
+        id: sites.id,
+        name: sites.name,
+        slug: sites.slug,
+        workspaceId: sites.workspaceId,
+      })
+      .from(sites)
+      .where(eq(sites.slug, slug))
+      .limit(1);
+    return site ?? null;
+  },
+
   async resolveSiteByHost(hostname: string): Promise<ResolvedSite | null> {
     const customDomain = await db
       .select({

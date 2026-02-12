@@ -4,11 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { BookOpen, Search, FileText, ChevronRight, ArrowLeft } from "lucide-react";
+import { BookOpen, Search, FileText, ChevronRight, ArrowLeft, CheckCircle2, XCircle, ClipboardCheck, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { DocEntry } from "@shared/schema";
 import { useState } from "react";
+
+function useIsSuperAdmin() {
+  const { data } = useQuery<{ user: { role: string } }>({
+    queryKey: ["/api/user/me"],
+  });
+  return data?.user?.role === "SUPER_ADMIN";
+}
 
 const categoryLabels: Record<string, string> = {
   "getting-started": "Getting Started",
@@ -19,9 +25,24 @@ const categoryLabels: Record<string, string> = {
   help: "Help",
 };
 
+interface ChecklistItem {
+  file: string;
+  label: string;
+  area: string;
+  exists: boolean;
+  sizeBytes: number;
+}
+
+interface ChecklistData {
+  items: ChecklistItem[];
+  total: number;
+  covered: number;
+}
+
 export default function DocsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDoc, setSelectedDoc] = useState<DocEntry | null>(null);
+  const isSuperAdmin = useIsSuperAdmin();
 
   const { data: docs, isLoading } = useQuery<DocEntry[]>({
     queryKey: ["/api/docs"],
@@ -113,6 +134,12 @@ export default function DocsPage() {
           <TabsTrigger value="all" data-testid="tab-all-docs">All</TabsTrigger>
           <TabsTrigger value="developer" data-testid="tab-developer-docs">Developer</TabsTrigger>
           <TabsTrigger value="help" data-testid="tab-help-docs">Help</TabsTrigger>
+          {isSuperAdmin && (
+            <TabsTrigger value="checklist" data-testid="tab-docs-checklist">
+              <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" />
+              Checklist
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="all" className="mt-4">
@@ -139,7 +166,123 @@ export default function DocsPage() {
             onSelect={setSelectedDoc}
           />
         </TabsContent>
+        {isSuperAdmin && (
+          <TabsContent value="checklist" className="mt-4">
+            <DocsChecklist />
+          </TabsContent>
+        )}
       </Tabs>
+    </div>
+  );
+}
+
+function DocsChecklist() {
+  const { data, isLoading } = useQuery<ChecklistData>({
+    queryKey: ["/api/docs/checklist"],
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-5 w-5 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <ClipboardCheck className="h-10 w-10 text-muted-foreground/40" />
+          <p className="mt-3 text-sm text-muted-foreground">Could not load checklist.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const areas = [...new Set(data.items.map((i) => i.area))];
+  const pct = Math.round((data.covered / data.total) * 100);
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h3 className="text-sm font-semibold" data-testid="text-checklist-title">Documentation Coverage</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {data.covered} of {data.total} system docs present
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-2 w-32 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${pct}%` }}
+                  data-testid="progress-coverage"
+                />
+              </div>
+              <Badge variant={pct === 100 ? "default" : "secondary"} data-testid="badge-coverage-pct">
+                {pct}%
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {areas.map((area) => {
+        const areaItems = data.items.filter((i) => i.area === area);
+        const areaCovered = areaItems.filter((i) => i.exists).length;
+        return (
+          <div key={area}>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{area}</h3>
+              <Badge variant="outline" className="text-[10px]">
+                {areaCovered}/{areaItems.length}
+              </Badge>
+            </div>
+            <div className="space-y-2">
+              {areaItems.map((item) => (
+                <Card key={item.file} data-testid={`checklist-item-${item.file}`}>
+                  <CardContent className="flex items-center gap-3 p-4">
+                    {item.exists ? (
+                      <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600 dark:text-green-400" data-testid={`icon-check-${item.file}`} />
+                    ) : (
+                      <XCircle className="h-5 w-5 shrink-0 text-muted-foreground/40" data-testid={`icon-missing-${item.file}`} />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm">{item.label}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {item.file}
+                        {item.exists && item.sizeBytes > 0 && (
+                          <span className="ml-2">
+                            ({(item.sizeBytes / 1024).toFixed(1)} KB)
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <Badge variant={item.exists ? "default" : "outline"} className="shrink-0">
+                      {item.exists ? "Present" : "Missing"}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

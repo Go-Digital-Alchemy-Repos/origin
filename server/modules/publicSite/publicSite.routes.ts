@@ -54,6 +54,61 @@ function buildBaseUrl(req: Request, site: ResolvedSite): string {
   return `${protocol}://${host}`;
 }
 
+export function publicSitePreviewRoutes(): Router {
+  const router = Router();
+
+  router.get(
+    "/public-preview/:siteSlug",
+    async (req: Request, res: Response) => {
+      try {
+        const site = await publicSiteService.resolveSiteBySlug(req.params.siteSlug);
+        if (!site) {
+          return res.status(404).json({ error: { message: "Site not found", code: "NOT_FOUND" } });
+        }
+
+        const pageSlug = (req.query.page as string) || "";
+        const allPages = await publicSiteService.getPublishedPages(site.id);
+        let targetSlug = pageSlug;
+        if (!targetSlug) {
+          const home = allPages.find((p: any) => p.slug === "home" || p.slug === "index");
+          targetSlug = home?.slug || allPages[0]?.slug || "";
+        }
+
+        if (!targetSlug) {
+          return res.status(404).type("html").send(render404Page(site.name));
+        }
+
+        const [page, theme, headerMenu, footerMenu] = await Promise.all([
+          publicSiteService.getPublishedPage(site.id, targetSlug),
+          publicSiteService.getSiteTheme(site.id),
+          publicSiteService.getMenuBySlot(site.id, "header"),
+          publicSiteService.getMenuBySlot(site.id, "footer"),
+        ]);
+
+        if (!page) {
+          return res.status(404).type("html").send(render404Page(site.name));
+        }
+
+        setNoCacheHeaders(res);
+        const html = renderPublicPage({
+          site: { name: site.name, slug: site.slug },
+          page,
+          theme,
+          pages: allPages,
+          headerMenu: headerMenu ?? undefined,
+          footerMenu: footerMenu ?? undefined,
+        });
+        res.type("html").send(html);
+      } catch (err) {
+        log(`Preview render error: ${err}`, "public");
+        res.status(500).json({ error: { message: "Render failed", code: "RENDER_ERROR" } });
+      }
+    },
+  );
+
+  return router;
+}
+
 export function publicSiteRoutes(): Router {
   const router = Router();
 

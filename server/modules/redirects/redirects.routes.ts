@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { redirectsService } from "./redirects.service";
-import { requireAuth, requireWorkspaceContext } from "../shared/auth-middleware";
+import { requireAuth, requireWorkspaceContext, getWorkspaceId } from "../shared/auth-middleware";
+import { validateBody } from "../shared/validate";
 import { z } from "zod";
-import type { Request, Response } from "express";
 
 const createRedirectBody = z.object({
   fromPath: z.string().min(1),
@@ -16,10 +16,6 @@ const updateRedirectBody = z.object({
   code: z.number().int().refine((v) => v === 301 || v === 302, { message: "Code must be 301 or 302" }).optional(),
 });
 
-function getWorkspaceId(req: Request): string | null {
-  return req.workspace?.id || req.session?.activeWorkspaceId || null;
-}
-
 export function redirectsRoutes(): Router {
   const router = Router();
 
@@ -30,9 +26,9 @@ export function redirectsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const owns = await redirectsService.verifySiteOwnership(req.params.siteId, workspaceId);
-        if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace" } });
+        if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace", code: "NOT_FOUND" } });
         const list = await redirectsService.getRedirectsBySite(req.params.siteId);
         res.json(list);
       } catch (err) {
@@ -48,9 +44,9 @@ export function redirectsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const owns = await redirectsService.verifySiteOwnership(req.params.siteId, workspaceId);
-        if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace" } });
+        if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace", code: "NOT_FOUND" } });
         const parsed = createRedirectBody.parse(req.body);
         const redirect = await redirectsService.createRedirect({
           siteId: req.params.siteId,
@@ -72,9 +68,9 @@ export function redirectsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const existing = await redirectsService.verifyRedirectOwnership(req.params.redirectId, workspaceId);
-        if (!existing) return res.status(404).json({ error: { message: "Redirect not found" } });
+        if (!existing) return res.status(404).json({ error: { message: "Redirect not found", code: "NOT_FOUND" } });
         const parsed = updateRedirectBody.parse(req.body);
         const updated = await redirectsService.updateRedirect(req.params.redirectId, parsed);
         res.json(updated);
@@ -91,9 +87,9 @@ export function redirectsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const existing = await redirectsService.verifyRedirectOwnership(req.params.redirectId, workspaceId);
-        if (!existing) return res.status(404).json({ error: { message: "Redirect not found" } });
+        if (!existing) return res.status(404).json({ error: { message: "Redirect not found", code: "NOT_FOUND" } });
         await redirectsService.deleteRedirect(req.params.redirectId);
         res.json({ success: true });
       } catch (err) {
@@ -109,9 +105,9 @@ export function redirectsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const owns = await redirectsService.verifySiteOwnership(req.params.siteId, workspaceId);
-        if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace" } });
+        if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace", code: "NOT_FOUND" } });
 
         const body = z
           .object({
@@ -121,10 +117,10 @@ export function redirectsRoutes(): Router {
 
         const rows = parseCsv(body.csv);
         if (rows.length === 0) {
-          return res.status(400).json({ error: { message: "No valid rows found in CSV" } });
+          return res.status(400).json({ error: { message: "No valid rows found in CSV", code: "VALIDATION_ERROR" } });
         }
         if (rows.length > 1000) {
-          return res.status(400).json({ error: { message: "Maximum 1000 redirects per import" } });
+          return res.status(400).json({ error: { message: "Maximum 1000 redirects per import", code: "VALIDATION_ERROR" } });
         }
 
         const result = await redirectsService.bulkCreateRedirects(req.params.siteId, rows);
@@ -142,9 +138,9 @@ export function redirectsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const owns = await redirectsService.verifySiteOwnership(req.params.siteId, workspaceId);
-        if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace" } });
+        if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace", code: "NOT_FOUND" } });
         const suggestions = await redirectsService.getSuggestionsBySite(req.params.siteId);
         res.json(suggestions);
       } catch (err) {
@@ -160,11 +156,11 @@ export function redirectsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const suggestion = await redirectsService.verifySuggestionOwnership(req.params.suggestionId, workspaceId);
-        if (!suggestion) return res.status(404).json({ error: { message: "Suggestion not found" } });
+        if (!suggestion) return res.status(404).json({ error: { message: "Suggestion not found", code: "NOT_FOUND" } });
         const redirect = await redirectsService.acceptSuggestion(req.params.suggestionId);
-        if (!redirect) return res.status(404).json({ error: { message: "Suggestion not found" } });
+        if (!redirect) return res.status(404).json({ error: { message: "Suggestion not found", code: "NOT_FOUND" } });
         res.json(redirect);
       } catch (err) {
         next(err);
@@ -179,9 +175,9 @@ export function redirectsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const suggestion = await redirectsService.verifySuggestionOwnership(req.params.suggestionId, workspaceId);
-        if (!suggestion) return res.status(404).json({ error: { message: "Suggestion not found" } });
+        if (!suggestion) return res.status(404).json({ error: { message: "Suggestion not found", code: "NOT_FOUND" } });
         await redirectsService.dismissSuggestion(req.params.suggestionId);
         res.json({ success: true });
       } catch (err) {

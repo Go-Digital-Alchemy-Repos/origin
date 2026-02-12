@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { cmsMenusService } from "./cmsMenus.service";
-import { requireAuth, requireWorkspaceContext } from "../shared/auth-middleware";
+import { requireAuth, requireWorkspaceContext, getWorkspaceId } from "../shared/auth-middleware";
+import { validateBody } from "../shared/validate";
 import { z } from "zod";
-import type { Request, Response } from "express";
 
 const createMenuBody = z.object({
   name: z.string().min(1),
@@ -42,10 +42,6 @@ const reorderBody = z.object({
   ),
 });
 
-function getWorkspaceId(req: Request): string | null {
-  return req.workspace?.id || req.session?.activeWorkspaceId || null;
-}
-
 export function cmsMenusRoutes(): Router {
   const router = Router();
 
@@ -56,7 +52,7 @@ export function cmsMenusRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const menuList = await cmsMenusService.getMenusBySite(req.params.siteId, workspaceId);
         res.json(menuList);
       } catch (err) {
@@ -72,7 +68,7 @@ export function cmsMenusRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const parsed = createMenuBody.parse(req.body);
         const menu = await cmsMenusService.createMenu({
           ...parsed,
@@ -94,9 +90,9 @@ export function cmsMenusRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const menu = await cmsMenusService.getMenuForWorkspace(req.params.menuId, workspaceId);
-        if (!menu) return res.status(404).json({ error: { message: "Menu not found" } });
+        if (!menu) return res.status(404).json({ error: { message: "Menu not found", code: "NOT_FOUND" } });
         const withItems = await cmsMenusService.getMenuWithItems(menu.id);
         res.json(withItems);
       } catch (err) {
@@ -112,9 +108,9 @@ export function cmsMenusRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const menu = await cmsMenusService.getMenuForWorkspace(req.params.menuId, workspaceId);
-        if (!menu) return res.status(404).json({ error: { message: "Menu not found" } });
+        if (!menu) return res.status(404).json({ error: { message: "Menu not found", code: "NOT_FOUND" } });
         const parsed = updateMenuBody.parse(req.body);
         const updated = await cmsMenusService.updateMenu(req.params.menuId, parsed);
         res.json(updated);
@@ -131,9 +127,9 @@ export function cmsMenusRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const menu = await cmsMenusService.getMenuForWorkspace(req.params.menuId, workspaceId);
-        if (!menu) return res.status(404).json({ error: { message: "Menu not found" } });
+        if (!menu) return res.status(404).json({ error: { message: "Menu not found", code: "NOT_FOUND" } });
         await cmsMenusService.deleteMenu(req.params.menuId);
         res.json({ success: true });
       } catch (err) {
@@ -149,9 +145,9 @@ export function cmsMenusRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const menu = await cmsMenusService.getMenuForWorkspace(req.params.menuId, workspaceId);
-        if (!menu) return res.status(404).json({ error: { message: "Menu not found" } });
+        if (!menu) return res.status(404).json({ error: { message: "Menu not found", code: "NOT_FOUND" } });
         const parsed = createItemBody.parse(req.body);
         const item = await cmsMenusService.addMenuItem({
           menuId: req.params.menuId,
@@ -176,9 +172,9 @@ export function cmsMenusRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const menu = await cmsMenusService.getMenuForWorkspace(req.params.menuId, workspaceId);
-        if (!menu) return res.status(404).json({ error: { message: "Menu not found" } });
+        if (!menu) return res.status(404).json({ error: { message: "Menu not found", code: "NOT_FOUND" } });
         const parsed = updateItemBody.parse(req.body);
         const item = await cmsMenusService.updateMenuItem(req.params.itemId, parsed);
         res.json(item);
@@ -195,9 +191,9 @@ export function cmsMenusRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const menu = await cmsMenusService.getMenuForWorkspace(req.params.menuId, workspaceId);
-        if (!menu) return res.status(404).json({ error: { message: "Menu not found" } });
+        if (!menu) return res.status(404).json({ error: { message: "Menu not found", code: "NOT_FOUND" } });
         await cmsMenusService.deleteMenuItem(req.params.itemId);
         res.json({ success: true });
       } catch (err) {
@@ -213,9 +209,9 @@ export function cmsMenusRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const menu = await cmsMenusService.getMenuForWorkspace(req.params.menuId, workspaceId);
-        if (!menu) return res.status(404).json({ error: { message: "Menu not found" } });
+        if (!menu) return res.status(404).json({ error: { message: "Menu not found", code: "NOT_FOUND" } });
         const parsed = reorderBody.parse(req.body);
         const items = await cmsMenusService.reorderItems(req.params.menuId, parsed.tree);
         res.json(items);

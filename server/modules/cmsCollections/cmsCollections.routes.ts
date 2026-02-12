@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { cmsCollectionsService } from "./cmsCollections.service";
-import { requireAuth, requireWorkspaceContext } from "../shared/auth-middleware";
+import { requireAuth, requireWorkspaceContext, getWorkspaceId } from "../shared/auth-middleware";
+import { validateBody } from "../shared/validate";
 import { collectionFieldSchema } from "@shared/schema";
 import { z } from "zod";
-import type { Request } from "express";
 
 const createCollectionBody = z.object({
   name: z.string().min(1),
@@ -24,10 +24,6 @@ const saveItemBody = z.object({
   note: z.string().optional(),
 });
 
-function getWorkspaceId(req: Request): string | null {
-  return req.workspace?.id || req.session?.activeWorkspaceId || null;
-}
-
 export function cmsCollectionsRoutes(): Router {
   const router = Router();
 
@@ -38,7 +34,7 @@ export function cmsCollectionsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const { search } = req.query;
         const list = await cmsCollectionsService.getCollectionsBySite(
@@ -60,7 +56,7 @@ export function cmsCollectionsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const parsed = createCollectionBody.parse(req.body);
         const col = await cmsCollectionsService.createCollection({
@@ -78,10 +74,10 @@ export function cmsCollectionsRoutes(): Router {
   router.get("/collections/:collectionId", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
     try {
       const workspaceId = getWorkspaceId(req);
-      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
       const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-      if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+      if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
       res.json(col);
     } catch (err) {
       next(err);
@@ -91,10 +87,10 @@ export function cmsCollectionsRoutes(): Router {
   router.patch("/collections/:collectionId", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
     try {
       const workspaceId = getWorkspaceId(req);
-      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
       const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-      if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+      if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
 
       const parsed = updateCollectionBody.parse(req.body);
       const updated = await cmsCollectionsService.updateCollection(req.params.collectionId, parsed);
@@ -107,10 +103,10 @@ export function cmsCollectionsRoutes(): Router {
   router.delete("/collections/:collectionId", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
     try {
       const workspaceId = getWorkspaceId(req);
-      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
       const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-      if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+      if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
 
       await cmsCollectionsService.deleteCollection(req.params.collectionId);
       res.json({ success: true });
@@ -126,10 +122,10 @@ export function cmsCollectionsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-        if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+        if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
 
         const { status } = req.query;
         const items = await cmsCollectionsService.getItems(req.params.collectionId, {
@@ -149,10 +145,10 @@ export function cmsCollectionsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-        if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+        if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
 
         const { dataJson } = req.body || {};
         const result = await cmsCollectionsService.createItem(req.params.collectionId, req.user!.id, dataJson);
@@ -170,13 +166,13 @@ export function cmsCollectionsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-        if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+        if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
 
         const item = await cmsCollectionsService.getItemForCollection(req.params.itemId, req.params.collectionId);
-        if (!item) return res.status(404).json({ error: { message: "Item not found" } });
+        if (!item) return res.status(404).json({ error: { message: "Item not found", code: "NOT_FOUND" } });
 
         const latestRevision = await cmsCollectionsService.getLatestItemRevision(item.id);
         res.json({ ...item, latestRevision });
@@ -193,13 +189,13 @@ export function cmsCollectionsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-        if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+        if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
 
         const item = await cmsCollectionsService.getItemForCollection(req.params.itemId, req.params.collectionId);
-        if (!item) return res.status(404).json({ error: { message: "Item not found" } });
+        if (!item) return res.status(404).json({ error: { message: "Item not found", code: "NOT_FOUND" } });
 
         const parsed = saveItemBody.parse(req.body);
         const result = await cmsCollectionsService.updateItem(req.params.itemId, parsed.dataJson, req.user!.id, parsed.note);
@@ -217,13 +213,13 @@ export function cmsCollectionsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-        if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+        if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
 
         const item = await cmsCollectionsService.getItemForCollection(req.params.itemId, req.params.collectionId);
-        if (!item) return res.status(404).json({ error: { message: "Item not found" } });
+        if (!item) return res.status(404).json({ error: { message: "Item not found", code: "NOT_FOUND" } });
 
         const { dataJson } = req.body || {};
         const result = await cmsCollectionsService.publishItem(req.params.itemId, req.user!.id, dataJson);
@@ -241,13 +237,13 @@ export function cmsCollectionsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-        if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+        if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
 
         const item = await cmsCollectionsService.getItemForCollection(req.params.itemId, req.params.collectionId);
-        if (!item) return res.status(404).json({ error: { message: "Item not found" } });
+        if (!item) return res.status(404).json({ error: { message: "Item not found", code: "NOT_FOUND" } });
 
         const result = await cmsCollectionsService.rollbackItem(req.params.itemId, req.params.revisionId, req.user!.id);
         res.json(result);
@@ -264,13 +260,13 @@ export function cmsCollectionsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-        if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+        if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
 
         const item = await cmsCollectionsService.getItemForCollection(req.params.itemId, req.params.collectionId);
-        if (!item) return res.status(404).json({ error: { message: "Item not found" } });
+        if (!item) return res.status(404).json({ error: { message: "Item not found", code: "NOT_FOUND" } });
 
         const revisions = await cmsCollectionsService.getItemRevisions(req.params.itemId);
         res.json(revisions);
@@ -287,13 +283,13 @@ export function cmsCollectionsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const col = await cmsCollectionsService.getCollectionForWorkspace(req.params.collectionId, workspaceId);
-        if (!col) return res.status(404).json({ error: { message: "Collection not found" } });
+        if (!col) return res.status(404).json({ error: { message: "Collection not found", code: "NOT_FOUND" } });
 
         const item = await cmsCollectionsService.getItemForCollection(req.params.itemId, req.params.collectionId);
-        if (!item) return res.status(404).json({ error: { message: "Item not found" } });
+        if (!item) return res.status(404).json({ error: { message: "Item not found", code: "NOT_FOUND" } });
 
         await cmsCollectionsService.deleteItem(req.params.itemId);
         res.json({ success: true });

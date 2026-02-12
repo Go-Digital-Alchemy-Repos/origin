@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { formsService } from "./forms.service";
-import { requireAuth, requireWorkspaceContext } from "../shared/auth-middleware";
+import { requireAuth, requireWorkspaceContext, getWorkspaceId } from "../shared/auth-middleware";
+import { validateBody } from "../shared/validate";
 import { z } from "zod";
 import { formFieldSchema, formSettingsSchema } from "@shared/schema";
-import type { Request, Response } from "express";
 import crypto from "crypto";
 
 const createFormBody = z.object({
@@ -19,10 +19,6 @@ const updateFormBody = z.object({
   isActive: z.boolean().optional(),
 });
 
-function getWorkspaceId(req: Request): string | null {
-  return req.workspace?.id || req.session?.activeWorkspaceId || null;
-}
-
 function hashIp(ip: string): string {
   return crypto.createHash("sha256").update(ip).digest("hex").slice(0, 16);
 }
@@ -37,7 +33,7 @@ export function formsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const formsList = await formsService.getFormsBySite(req.params.siteId, workspaceId);
         res.json(formsList);
       } catch (err) {
@@ -53,7 +49,7 @@ export function formsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const parsed = createFormBody.parse(req.body);
         const form = await formsService.createForm({
           name: parsed.name,
@@ -76,9 +72,9 @@ export function formsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const form = await formsService.getFormForWorkspace(req.params.formId, workspaceId);
-        if (!form) return res.status(404).json({ error: { message: "Form not found" } });
+        if (!form) return res.status(404).json({ error: { message: "Form not found", code: "NOT_FOUND" } });
         res.json(form);
       } catch (err) {
         next(err);
@@ -93,9 +89,9 @@ export function formsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const form = await formsService.getFormForWorkspace(req.params.formId, workspaceId);
-        if (!form) return res.status(404).json({ error: { message: "Form not found" } });
+        if (!form) return res.status(404).json({ error: { message: "Form not found", code: "NOT_FOUND" } });
         const parsed = updateFormBody.parse(req.body);
         const updated = await formsService.updateForm(req.params.formId, parsed);
         res.json(updated);
@@ -112,9 +108,9 @@ export function formsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const form = await formsService.getFormForWorkspace(req.params.formId, workspaceId);
-        if (!form) return res.status(404).json({ error: { message: "Form not found" } });
+        if (!form) return res.status(404).json({ error: { message: "Form not found", code: "NOT_FOUND" } });
         await formsService.deleteForm(req.params.formId);
         res.json({ success: true });
       } catch (err) {
@@ -130,9 +126,9 @@ export function formsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const form = await formsService.getFormForWorkspace(req.params.formId, workspaceId);
-        if (!form) return res.status(404).json({ error: { message: "Form not found" } });
+        if (!form) return res.status(404).json({ error: { message: "Form not found", code: "NOT_FOUND" } });
 
         const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
         const offset = parseInt(req.query.offset as string) || 0;
@@ -151,9 +147,9 @@ export function formsRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const form = await formsService.getFormForWorkspace(req.params.formId, workspaceId);
-        if (!form) return res.status(404).json({ error: { message: "Form not found" } });
+        if (!form) return res.status(404).json({ error: { message: "Form not found", code: "NOT_FOUND" } });
         await formsService.deleteSubmission(req.params.submissionId);
         res.json({ success: true });
       } catch (err) {
@@ -166,7 +162,7 @@ export function formsRoutes(): Router {
     try {
       const form = await formsService.getForm(req.params.formId);
       if (!form || !form.isActive) {
-        return res.status(404).json({ error: { message: "Form not found or inactive" } });
+        return res.status(404).json({ error: { message: "Form not found or inactive", code: "NOT_FOUND" } });
       }
 
       const settings = (form.settingsJson || {}) as Record<string, unknown>;
@@ -181,7 +177,7 @@ export function formsRoutes(): Router {
       const rateLimit = (settings.rateLimitPerMinute as number) || 10;
       const allowed = await formsService.checkRateLimit(req.params.formId, ipHashed, rateLimit);
       if (!allowed) {
-        return res.status(429).json({ error: { message: "Too many submissions. Please try again later." } });
+        return res.status(429).json({ error: { message: "Too many submissions. Please try again later.", code: "RATE_LIMITED" } });
       }
 
       const { _hp_field, ...rawPayload } = req.body;
@@ -232,7 +228,7 @@ export function formsRoutes(): Router {
     try {
       const form = await formsService.getForm(req.params.formId);
       if (!form || !form.isActive) {
-        return res.status(404).json({ error: { message: "Form not found" } });
+        return res.status(404).json({ error: { message: "Form not found", code: "NOT_FOUND" } });
       }
       res.json({
         id: form.id,

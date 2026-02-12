@@ -14,6 +14,7 @@ import { createFormsModule } from "./forms";
 import { createRedirectsModule } from "./redirects";
 import { createSeoModule } from "./seo";
 import { createBlogModule } from "./blog";
+import { publicSitePreviewRoutes } from "./publicSite";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -33,6 +34,7 @@ export function registerAllModules(): Router {
   api.use(createRedirectsModule());
   api.use(createSeoModule());
   api.use(createBlogModule());
+  api.use(publicSitePreviewRoutes());
 
   return api;
 }

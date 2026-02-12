@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { cmsPagesService } from "./cmsPages.service";
-import { requireAuth, requireWorkspaceContext } from "../shared/auth-middleware";
+import { requireAuth, requireWorkspaceContext, getWorkspaceId } from "../shared/auth-middleware";
+import { validateBody } from "../shared/validate";
 import { z } from "zod";
-import type { Request, Response } from "express";
 import { purgeCache } from "../publicSite/publicSite.cache";
 
 const createPageBody = z.object({
@@ -34,10 +34,6 @@ const updatePageBody = z.object({
   ogImage: z.string().optional(),
 });
 
-function getWorkspaceId(req: Request): string | null {
-  return req.workspace?.id || req.session?.activeWorkspaceId || null;
-}
-
 export function cmsPagesRoutes(): Router {
   const router = Router();
 
@@ -48,7 +44,7 @@ export function cmsPagesRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const { search, status } = req.query;
         const pagesList = await cmsPagesService.getPagesBySite(
@@ -73,7 +69,7 @@ export function cmsPagesRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const parsed = createPageBody.parse(req.body);
         const result = await cmsPagesService.createPage(
@@ -91,10 +87,10 @@ export function cmsPagesRoutes(): Router {
   router.get("/pages/:pageId", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
     try {
       const workspaceId = getWorkspaceId(req);
-      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
       const page = await cmsPagesService.getPageForWorkspace(req.params.pageId, workspaceId);
-      if (!page) return res.status(404).json({ error: { message: "Page not found" } });
+      if (!page) return res.status(404).json({ error: { message: "Page not found", code: "NOT_FOUND" } });
 
       const latestRevision = await cmsPagesService.getLatestRevision(page.id);
       res.json({ ...page, latestRevision });
@@ -106,10 +102,10 @@ export function cmsPagesRoutes(): Router {
   router.patch("/pages/:pageId", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
     try {
       const workspaceId = getWorkspaceId(req);
-      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
       const page = await cmsPagesService.getPageForWorkspace(req.params.pageId, workspaceId);
-      if (!page) return res.status(404).json({ error: { message: "Page not found" } });
+      if (!page) return res.status(404).json({ error: { message: "Page not found", code: "NOT_FOUND" } });
 
       const parsed = updatePageBody.parse(req.body);
       const { note, ...data } = parsed;
@@ -127,10 +123,10 @@ export function cmsPagesRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const page = await cmsPagesService.getPageForWorkspace(req.params.pageId, workspaceId);
-        if (!page) return res.status(404).json({ error: { message: "Page not found" } });
+        if (!page) return res.status(404).json({ error: { message: "Page not found", code: "NOT_FOUND" } });
 
         const { contentJson } = req.body || {};
         const result = await cmsPagesService.publishPage(req.params.pageId, req.user!.id, contentJson);
@@ -149,10 +145,10 @@ export function cmsPagesRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const page = await cmsPagesService.getPageForWorkspace(req.params.pageId, workspaceId);
-        if (!page) return res.status(404).json({ error: { message: "Page not found" } });
+        if (!page) return res.status(404).json({ error: { message: "Page not found", code: "NOT_FOUND" } });
 
         const result = await cmsPagesService.rollbackToRevision(
           req.params.pageId,
@@ -173,10 +169,10 @@ export function cmsPagesRoutes(): Router {
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
-        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+        if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
         const page = await cmsPagesService.getPageForWorkspace(req.params.pageId, workspaceId);
-        if (!page) return res.status(404).json({ error: { message: "Page not found" } });
+        if (!page) return res.status(404).json({ error: { message: "Page not found", code: "NOT_FOUND" } });
 
         const revisions = await cmsPagesService.getRevisions(req.params.pageId);
         res.json(revisions);
@@ -189,10 +185,10 @@ export function cmsPagesRoutes(): Router {
   router.delete("/pages/:pageId", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
     try {
       const workspaceId = getWorkspaceId(req);
-      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required" } });
+      if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
       const page = await cmsPagesService.getPageForWorkspace(req.params.pageId, workspaceId);
-      if (!page) return res.status(404).json({ error: { message: "Page not found" } });
+      if (!page) return res.status(404).json({ error: { message: "Page not found", code: "NOT_FOUND" } });
 
       await cmsPagesService.deletePage(req.params.pageId);
       res.json({ success: true });

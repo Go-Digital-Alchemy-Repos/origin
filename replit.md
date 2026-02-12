@@ -25,7 +25,8 @@ The frontend uses React 18, Tailwind CSS, and shadcn/ui. `wouter` handles routin
 -   **Database:** PostgreSQL with Drizzle ORM.
 -   **Authentication:** BetterAuth for email/password and session management, integrated with `useSession()` for frontend authentication state.
 -   **Server Module Pattern:** Self-contained modules (e.g., `server/modules/<name>/`) with dedicated routes and service files.
--   **Middleware:** `requireAuth()`, `requireRole()`, `requireWorkspaceContext()`, and `requireWorkspaceRole()` enforce access control.
+-   **Middleware:** `requireAuth()`, `requireRole()`, `requireWorkspaceContext()`, and `requireWorkspaceRole()` enforce access control. Shared `getWorkspaceId()` helper in `auth-middleware.ts` for DRY workspace extraction. `validateBody(schema)` middleware in `shared/validate.ts` for request body validation.
+-   **Error Handling:** Standardized error response shape `{ error: { message, code } }` across all routes. Global `ZodError` handler in `routes.ts`. Error codes: `VALIDATION_ERROR`, `NOT_FOUND`, `FORBIDDEN`, `CONFLICT`, `RATE_LIMITED`.
 -   **CMS Pages:** Workspace and site-scoped pages with automatic revisioning (last 10), explicit publishing, and non-destructive rollback.
 -   **Collections System:** Defines custom content types with JSON schema, supporting 9 field types. Includes automatic item revisioning, non-destructive rollback, and auto-generated editor forms.
 -   **Documentation System:** Separate "Docs Library" for developers and "Help & Resources" for clients, filterable by installed marketplace items.
