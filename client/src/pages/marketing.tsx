@@ -156,14 +156,14 @@ function HeroSection() {
           variants={fadeUp}
           custom={1}
         >
-          The modern platform that{" "}
+          A Modern Platform{" "}
           <span
             className="bg-clip-text text-transparent"
             style={{
               backgroundImage: "linear-gradient(135deg, #1e40af, #3b82f6, #60a5fa)",
             }}
           >
-            replaces WordPress
+            for Business in a Digital World
           </span>
         </motion.h1>
         <motion.p

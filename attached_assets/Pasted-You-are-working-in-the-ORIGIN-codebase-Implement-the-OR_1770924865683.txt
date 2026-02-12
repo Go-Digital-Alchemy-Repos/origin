@@ -1,0 +1,174 @@
+You are working in the ORIGIN codebase. Implement the ORIGIN onboarding system using a HYBRID model:
+- Wizard until first publish
+- Persistent onboarding checklist afterward
+
+HARD REQUIREMENTS
+- NON-DESTRUCTIVE: do not remove existing features. Add new files + minimal wiring.
+- Must match ORIGIN’s premium SaaS UI (clean, branded, consistent tokens/primitives).
+- Inter font everywhere.
+- Light + dark mode supported.
+- Must integrate with existing: BetterAuth, Stripe billing, tenancy/workspaces, sites/pages, EditorShell, Marketplace, Docs Library + Resource Docs.
+- Document EVERYTHING: update developer docs + Resource Docs at the end.
+
+PRODUCT GOALS
+- Get a new customer from signup → first site → first publish in under 5 minutes.
+- After first publish, keep users progressing via a checklist.
+
+ONBOARDING RULES
+1) Wizard runs only until the user has published their first page on their first site.
+2) After wizard completion, the Dashboard shows an onboarding checklist.
+3) Checklist items auto-complete when the system detects the milestone occurred.
+4) Support different experiences for:
+   - CLIENT_ADMIN (default guided wizard)
+   - AGENCY_ADMIN (shorter onboarding with agency-focused checklist)
+5) Wizard should be resumable if user leaves mid-flow.
+
+STEP 1 — Data Model (Postgres + Drizzle)
+Create a workspace_onboarding table (or equivalent) scoped to workspace:
+- workspace_id (PK/FK)
+- wizard_completed (boolean)
+- wizard_step (string enum or text)
+- checklist_json (jsonb)
+- first_site_id (nullable)
+- first_published_at (nullable timestamp)
+- created_at, updated_at
+
+Checklist JSON should track milestones such as:
+- created_first_site
+- installed_site_kit
+- edited_first_page
+- published_first_page
+- connected_custom_domain
+- created_first_form
+- created_first_collection
+- created_first_blog_post
+- installed_marketplace_item
+- invited_team_member
+- enabled_crm (if entitlement present)
+Include role-aware defaults:
+- for AGENCY_ADMIN include: created_first_client_site, opened_platform_studio, started_wp_import
+
+Add Drizzle migrations + seed updates:
+- When creating a workspace, auto-create workspace_onboarding row with defaults.
+
+STEP 2 — Onboarding State Detection Services
+Create a server module: server/src/modules/onboarding/
+- onboarding.routes.ts
+- onboarding.service.ts
+- onboarding.repo.ts
+- onboarding.schemas.ts
+- types.ts
+Routes:
+- GET /api/onboarding/workspace (returns onboarding state for current workspace)
+- POST /api/onboarding/workspace/advance (sets wizard_step)
+- POST /api/onboarding/workspace/complete-wizard (marks wizard_completed)
+- POST /api/onboarding/workspace/recompute (rebuild checklist_json from observed data)
+
+Implement a recomputeChecklist() function that queries platform state and updates checklist_json automatically:
+- created_first_site: sites count > 0
+- published_first_page: any page status == PUBLISHED for first_site_id (or any site)
+- created_first_form: forms count > 0
+- installed_marketplace_item: marketplace_installs enabled count > 0
+- connected_custom_domain: site_domains verified_at not null
+- etc.
+
+Ensure all queries are tenancy scoped (workspace_id and site_id where applicable).
+Use existing error/validation middleware; do not create inconsistent error shapes.
+
+STEP 3 — Wizard UI (apps/app) until first publish
+Implement a dedicated onboarding route group:
+- /onboarding (entry)
+- /onboarding/plan (if billing required)
+- /onboarding/site (create first site)
+- /onboarding/site-kit (choose + preview + install Site Kit)
+- /onboarding/editor (opens EditorShell in “tour mode”)
+- /onboarding/publish (confirm + celebrate)
+
+Behavior:
+- If wizard_completed, redirect to /dashboard.
+- If billing is required and subscription inactive, route to plan step.
+- Persist wizard_step so user can resume.
+
+UI requirements:
+- Premium wizard layout: progress indicator + minimal distractions.
+- Use ORIGIN tokens/primitives (Panel, Tabs, Section, FieldRow, Button, etc).
+- Keep text concise with strong CTAs.
+
+Site creation step should:
+- ask for site name + slug (subdomain)
+- create site + create default home page draft if not exists
+- store first_site_id in onboarding row
+
+Site kit step should:
+- show Site Kits (Marketplace category)
+- allow preview (non-destructive)
+- install selected kit (non-destructive)
+- set installed_site_kit milestone when install succeeds
+
+Editor step should:
+- open the new EditorShell route in a special mode:
+  - highlights Add panel, editing text, and Publish button (lightweight tour)
+  - do NOT add heavy tour libraries unless already present; implement a simple “tour overlay” component
+- provide a “Continue” CTA to publish
+
+Publish step should:
+- guide user to publish (or detect it already happened)
+- when first publish detected, mark wizard completed and set first_published_at
+
+STEP 4 — Dashboard Checklist (post-wizard)
+On /dashboard:
+- Add a Welcome card + Onboarding checklist widget if wizard_completed is true (and optionally if still incomplete items exist).
+- Checklist items must:
+  - show status (done/not done)
+  - deep-link to the correct page (Forms, Marketplace, Domains, Collections, etc.)
+  - include “recommended next” ordering
+
+Role-aware checklist:
+- CLIENT_ADMIN: focus on site building + SEO + forms + marketplace
+- AGENCY_ADMIN: focus on creating client site, WP import, platform studio
+
+Include a “Dismiss” option but keep it discoverable later under Help & Resources.
+
+STEP 5 — Integrations & Auto-Completion Hooks
+Add lightweight hooks so milestones update immediately after key actions:
+- after site creation
+- after kit install
+- after publish action
+- after form creation
+- after marketplace enable
+These hooks can simply call recompute endpoint or update the onboarding row directly.
+
+STEP 6 — Resource Docs + Docs Library
+Update documentation after implementation:
+Developer docs:
+- /docs/ONBOARDING_SYSTEM.md
+Include:
+- data model
+- APIs
+- wizard routes
+- checklist logic
+- how to add a new milestone
+- role variations
+
+Resource Docs:
+- Add a client-facing Help entry “Getting Started with ORIGIN”
+- Explain the wizard + checklist and where to find Help & Resources
+
+Also add an in-app Docs Library entry in Super Admin:
+- “Onboarding System (Wizard + Checklist)”
+- Include TODOs for future: analytics, guided tours expansion, A/B testing
+
+STEP 7 — Quality + Performance
+- Ensure onboarding screens are fast and don’t rerender heavy app shells.
+- Keep wizard layout separate from main sidebar layout.
+- Ensure no layout shift when loading onboarding state.
+- Add basic tests for recomputeChecklist() and wizard completion rules.
+
+OUTPUT REQUIREMENTS
+At the end, provide:
+- list of files created/modified
+- new env vars (if any)
+- routes/endpoints added
+- how to test onboarding end-to-end
+- docs entries added/updated
+- TODO recommendations (short list)
