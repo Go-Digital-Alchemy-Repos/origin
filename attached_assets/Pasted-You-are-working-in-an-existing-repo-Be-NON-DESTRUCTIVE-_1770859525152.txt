@@ -1,0 +1,56 @@
+You are working in an existing repo. Be NON-DESTRUCTIVE: do not delete working features. Prefer adding new modules and shims.
+
+We are building ORIGIN (originapp.ai) — a WordPress replacement platform with:
+- marketing site (originapp.ai)
+- app (app.originapp.ai)
+- BetterAuth authentication
+- PostgreSQL + Drizzle ORM
+- Stripe subscriptions (hybrid plan + per-site quantity)
+- module-based server architecture (no giant routes file)
+- Docs Library (developer-facing in Super Admin)
+- Resource Docs (client-facing help that is dynamic per installed modules/components)
+- global component registry (for the page builder) and marketplace framework (preview/install later)
+- comprehensive documentation is required after every prompt
+
+TASKS:
+1) Create a clean monorepo-like structure (choose best fit for current repo):
+   - apps/marketing (public marketing site)
+   - apps/app (authenticated ORIGIN dashboard)
+   - server (Express API)
+   - shared (types, zod schemas, utilities, constants)
+   - docs (markdown docs that mirror in-app docs content)
+
+2) Establish coding standards:
+   - strict TS
+   - eslint/prettier
+   - env validation (zod) with one env module used everywhere
+   - standard error shape (AppError) + request validation middleware
+   - logging wrapper (request IDs)
+
+3) Define the SERVER module pattern and enforce it:
+   server/src/modules/<moduleName>/
+     index.ts
+     <module>.routes.ts
+     <module>.service.ts
+     <module>.repo.ts
+     <module>.schemas.ts
+     types.ts
+   Create an aggregator to register all routes without large files.
+
+4) Add a Docs Governance rule:
+   - Every prompt must update docs in both:
+     a) /docs/*.md (developer docs)
+     b) in-app Docs Library seed entries
+   - Create /docs/ORIGIN_DOCS_GOVERNANCE.md describing the doc requirements and “definition of done”.
+
+5) UI baseline:
+   - Tailwind + Inter + Lucide + shadcn/ui
+   - Light + Dark mode from day one
+   - Hybrid navigation: marketing top nav, app left sidebar
+   - Brand style uses ORIGIN logo palette: deep navy base + blue gradient accent
+
+OUTPUT:
+- New repo tree summary
+- List of new conventions and how to add a new module
+- Confirmation that routes are modular (no giant routes file)
+- Docs created/updated (list them)
