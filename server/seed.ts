@@ -993,6 +993,79 @@ See /docs/THEME_TOKENS_LAYOUT_PRESETS.md for full reference.`,
     sortOrder: 18,
     isPublished: true,
   },
+  {
+    slug: "public-site-rendering-domains",
+    title: "Public Site Rendering & Domain Routing",
+    content: `ORIGIN renders published CMS pages as standalone HTML documents served to public visitors via subdomain or custom domain routing.
+
+## Architecture
+- Host resolver middleware intercepts requests before the SPA
+- Subdomain pattern: \`<site-slug>.originapp.ai\`
+- Custom domains via \`site_domains\` table with DNS verification
+- Server-side HTML rendering (no JS required)
+- Cache headers: 60s browser cache + 5min stale-while-revalidate
+
+## Module Structure
+\`\`\`
+server/modules/publicSite/
+├── publicSite.service.ts    — DB queries (host→site, page lookup)
+├── publicSite.routes.ts     — Express routes + host resolver
+├── publicSite.renderer.ts   — SSR HTML for all 10 block types
+└── publicSite.cache.ts      — Cache headers + purge hooks
+\`\`\`
+
+## Key APIs
+- Preview: GET /api/public-preview/:siteSlug?page=slug
+- Production: hostname-based routing via middleware
+
+## Cache Purge
+purgeCache(siteId, pageSlug) is called on page publish. Register CDN purge callbacks via onCachePurge().
+
+See /docs/PUBLIC_RENDERING_DOMAINS.md for full reference.`,
+    category: "guides",
+    type: "developer",
+    tags: ["public-site", "rendering", "domains", "caching", "SSR"],
+    sortOrder: 19,
+    isPublished: true,
+  },
+  {
+    slug: "help-public-site-preview",
+    title: "How to Preview Your Published Site",
+    content: `Once you publish pages in ORIGIN, they become available as a standalone public website.
+
+## Previewing Published Pages
+
+1. Go to **Pages** in the sidebar
+2. Open a page and click **Publish**
+3. Use the preview URL to see how visitors will experience your page
+
+## How It Works
+
+- Published pages are rendered as clean HTML — no login required
+- Your site is automatically available at \`<your-site-slug>.originapp.ai\`
+- Each published page gets its own URL (e.g., \`yoursite.originapp.ai/about\`)
+- The homepage is the first published page with slug "home" or "index"
+
+## Custom Domains
+
+You can connect your own domain (e.g., \`www.mybusiness.com\`) to your ORIGIN site:
+
+1. Add your domain in site settings
+2. Point your DNS to ORIGIN's servers
+3. Once verified, visitors can access your site at your custom domain
+
+## What Visitors See
+
+- Fast, lightweight pages with no unnecessary scripts
+- SEO-friendly with proper titles and meta tags
+- Responsive design that works on mobile, tablet, and desktop
+- Professional navigation and footer based on your published pages`,
+    category: "help",
+    type: "help",
+    tags: ["public-site", "preview", "publishing", "domains", "SEO"],
+    sortOrder: 19,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [

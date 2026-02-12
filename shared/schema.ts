@@ -523,3 +523,21 @@ export const insertSiteThemeSchema = createInsertSchema(siteThemes).omit({
 
 export type InsertSiteTheme = z.infer<typeof insertSiteThemeSchema>;
 export type SiteTheme = typeof siteThemes.$inferSelect;
+
+export const siteDomains = pgTable("site_domains", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  domain: text("domain").notNull().unique(),
+  isPrimary: boolean("is_primary").notNull().default(false),
+  verifiedAt: timestamp("verified_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSiteDomainSchema = createInsertSchema(siteDomains).omit({
+  id: true,
+  createdAt: true,
+  verifiedAt: true,
+});
+
+export type InsertSiteDomain = z.infer<typeof insertSiteDomainSchema>;
+export type SiteDomain = typeof siteDomains.$inferSelect;

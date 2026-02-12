@@ -3,6 +3,7 @@ import { cmsPagesService } from "./cmsPages.service";
 import { requireAuth, requireWorkspaceContext } from "../shared/auth-middleware";
 import { z } from "zod";
 import type { Request, Response } from "express";
+import { purgeCache } from "../publicSite/publicSite.cache";
 
 const createPageBody = z.object({
   title: z.string().min(1),
@@ -123,6 +124,7 @@ export function cmsPagesRoutes(): Router {
 
         const { contentJson } = req.body || {};
         const result = await cmsPagesService.publishPage(req.params.pageId, req.user!.id, contentJson);
+        purgeCache(page.siteId, page.slug);
         res.json(result);
       } catch (err) {
         next(err);

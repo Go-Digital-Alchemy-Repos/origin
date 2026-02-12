@@ -4,7 +4,7 @@
 
 ORIGIN is a modern website platform designed to replace traditional CMS solutions like WordPress. It offers a modular architecture, a visual page builder, and robust, enterprise-grade infrastructure. The platform aims to simplify website building, management, and scaling for businesses.
 
-Key capabilities include: authentication, multi-tenant workspaces, role-based access control, a marketing site, an app dashboard, a module browser, a documentation library, a marketplace framework, a help & resources section, a component registry, CMS pages with revision history and publishing, a Collections system for custom content types with revisioned items, and a site theme system with semantic tokens and layout presets. The project emphasizes a modular server architecture to ensure scalability and maintainability.
+Key capabilities include: authentication, multi-tenant workspaces, role-based access control, a marketing site, an app dashboard, a module browser, a documentation library, a marketplace framework, a help & resources section, a component registry, CMS pages with revision history and publishing, a Collections system for custom content types with revisioned items, a site theme system with semantic tokens and layout presets, and a public site rendering system with subdomain/custom domain routing. The project emphasizes a modular server architecture to ensure scalability and maintainability.
 
 ## User Preferences
 
@@ -33,6 +33,7 @@ The frontend utilizes React 18 with Tailwind CSS and shadcn/ui for a modern, com
 -   **Collections System:** Custom content types with schema definition (JSON array of field objects), supporting 9 field types. Items within collections have automatic revisioning (last 10), non-destructive rollback, and auto-generated forms in the item editor.
 -   **Documentation System:** Features a "Docs Library" for developer documentation and "Help & Resources" for client-facing help, filtered by installed marketplace items.
 -   **Component Registry:** A global catalog of reusable page builder components (`shared/component-registry.ts`) with prop schemas, presets, and documentation.
+-   **Public Site Rendering:** Server-side HTML rendering of published pages. Host resolver middleware intercepts requests by hostname (subdomain `<slug>.originapp.ai` or custom domain via `site_domains`). All 10 builder block types render server-side. Cache headers + purge hooks for CDN integration.
 
 **Feature Specifications:**
 
@@ -50,10 +51,13 @@ The frontend utilizes React 18 with Tailwind CSS and shadcn/ui for a modern, com
 -   `/app/collections/:id` — Collection detail (schema + items)
 -   `/app/collections/:id/items/:itemId` — Item editor
 -   `/api/cms/sites/:siteId/theme` — Theme GET/PUT
+-   `/api/public-preview/:siteSlug` — Public site preview (dev testing)
+-   `<slug>.originapp.ai/*` — Public site rendering (production, hostname-based)
 
 ## Database Tables
 
 -   `site_themes` — Per-site theme tokens and layout presets (site_id unique FK)
+-   `site_domains` — Custom domain mappings (site_id, domain, is_primary, verified_at)
 -   `pages` — CMS pages scoped by workspace + site
 -   `page_revisions` — Revision history for pages
 -   `collections` — Custom content type definitions
@@ -66,6 +70,7 @@ Located at `server/modules/`:
 -   `siteTheme/` — Site theme GET/PUT with zod validation
 -   `cmsPages/` — CMS pages CRUD + revisions
 -   `cmsCollections/` — Collections CRUD + items + revisions
+-   `publicSite/` — Public site rendering, host resolver, cache headers + purge
 -   `auth/` — Auth/workspace routes
 -   `billing/` — Stripe billing
 -   `marketplace/` — Marketplace items/installs
@@ -75,6 +80,19 @@ Located at `server/modules/`:
 -   `modules/` — Platform modules
 
 ## Recent Changes
+
+- 2026-02-12: Public site rendering & domain routing
+  - Added site_domains DB table for custom domain mappings
+  - Created publicSite server module (service, routes, renderer, cache)
+  - Host resolver middleware intercepts requests by hostname before Vite
+  - Subdomain routing: <slug>.originapp.ai
+  - Custom domain support via site_domains table
+  - Server-side HTML rendering for all 10 builder block types
+  - Cache headers (60s browser + 5min stale-while-revalidate) + purge hooks
+  - Preview API: GET /api/public-preview/:siteSlug for dev testing
+  - Auto-purge on CMS page publish
+  - Created PUBLIC_RENDERING_DOMAINS.md documentation
+  - Seeded 2 doc entries (developer + help)
 
 - 2026-02-12: Puck page builder integration
   - Installed @puckeditor/core as visual drag-and-drop builder engine
