@@ -156,7 +156,7 @@ function HeroSection() {
           variants={fadeUp}
           custom={1}
         >
-          A Mode4rn Platform{" "}
+          A Modern Platform{" "}
           <span
             className="bg-clip-text text-transparent"
             style={{
