@@ -23,7 +23,7 @@ export function createComponentRegistryRoutes(): Router {
   router.get("/component-registry/:slug", (req, res) => {
     const component = componentRegistry.find((c) => c.slug === req.params.slug);
     if (!component) {
-      return res.status(404).json({ error: "Component not found" });
+      return res.status(404).json({ error: { message: "Component not found", code: "NOT_FOUND" } });
     }
     res.json(component);
   });

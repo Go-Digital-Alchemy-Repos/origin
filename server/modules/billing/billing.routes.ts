@@ -95,12 +95,12 @@ export function createWebhookRoute(): Router {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) {
       log("Stripe webhook secret not configured", "billing");
-      return res.status(503).json({ error: "Webhook secret not configured" });
+      return res.status(503).json({ error: { message: "Webhook secret not configured", code: "STRIPE_NOT_CONFIGURED" } });
     }
 
     const sig = req.headers["stripe-signature"];
     if (!sig) {
-      return res.status(400).json({ error: "Missing stripe-signature header" });
+      return res.status(400).json({ error: { message: "Missing stripe-signature header", code: "VALIDATION_ERROR" } });
     }
 
     let event: Stripe.Event;
@@ -109,7 +109,7 @@ export function createWebhookRoute(): Router {
       event = stripe.webhooks.constructEvent(req.rawBody as Buffer, sig, webhookSecret);
     } catch (err: any) {
       log(`Webhook signature verification failed: ${err.message}`, "billing");
-      return res.status(400).json({ error: `Webhook Error: ${err.message}` });
+      return res.status(400).json({ error: { message: `Webhook signature verification failed: ${err.message}`, code: "VALIDATION_ERROR" } });
     }
 
     try {
@@ -117,7 +117,7 @@ export function createWebhookRoute(): Router {
       res.json({ received: true });
     } catch (err: any) {
       log(`Webhook handler error: ${err.message}`, "billing");
-      res.status(500).json({ error: "Webhook handler failed" });
+      res.status(500).json({ error: { message: "Webhook handler failed", code: "INTERNAL_ERROR" } });
     }
   });
 
