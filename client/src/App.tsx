@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -41,6 +41,8 @@ import SettingsPage from "@/pages/settings";
 import UsersAdminPage from "@/pages/users-admin";
 import StubPage from "@/pages/stub";
 import SiteKitsPage from "@/pages/site-kits";
+import CrmLeadsPage from "@/pages/crm-leads";
+import CrmContactsPage from "@/pages/crm-contacts";
 import BillingPage from "@/pages/billing";
 import HelpPage from "@/pages/help";
 import MarketplacePage from "@/pages/marketplace";
@@ -80,7 +82,9 @@ function AppRouter() {
       <Route path="/app/redirects" component={RedirectsPage} />
       <Route path="/app/menus" component={MenusPage} />
       <Route path="/app/marketplace" component={MarketplacePage} />
-      <Route path="/app/crm">{() => <StubPage title="CRM" description="Customer relationship management. Track leads, contacts, and interactions." icon="contact" locked />}</Route>
+      <Route path="/app/crm/leads" component={CrmLeadsPage} />
+      <Route path="/app/crm/contacts" component={CrmContactsPage} />
+      <Route path="/app/crm"><Redirect to="/app/crm/leads" /></Route>
       <Route path="/app/help" component={HelpPage} />
       <Route path="/app/studio">{() => <StubPage title="Platform Dashboard" description="Overview of all clients, sites, and platform health across your ORIGIN instance." icon="layout-dashboard" studio />}</Route>
       <Route path="/app/studio/clients">{() => <StubPage title="Clients" description="Manage client workspaces, onboarding, and team access across the platform." icon="building-2" studio />}</Route>

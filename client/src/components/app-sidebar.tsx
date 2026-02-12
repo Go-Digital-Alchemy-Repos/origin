@@ -12,6 +12,7 @@ import {
   Menu as MenuIcon,
   Store,
   Contact,
+  Users,
   HelpCircle,
   Blocks,
   Layers,
@@ -68,7 +69,8 @@ const clientNav: NavItem[] = [
 
 const clientSecondaryNav: NavItem[] = [
   { title: "Marketplace", href: "/app/marketplace", icon: Store },
-  { title: "CRM", href: "/app/crm", icon: Contact, locked: true },
+  { title: "Leads", href: "/app/crm/leads", icon: Contact },
+  { title: "Contacts", href: "/app/crm/contacts", icon: Users },
 ];
 
 const clientBottomNav: NavItem[] = [

@@ -4,6 +4,7 @@ import { requireAuth, requireWorkspaceContext, getWorkspaceId } from "../shared/
 import { validateBody } from "../shared/validate";
 import { z } from "zod";
 import { formFieldSchema, formSettingsSchema } from "@shared/schema";
+import { crmService } from "../apps/crm/crm.service";
 import crypto from "crypto";
 
 const createFormBody = z.object({
@@ -212,6 +213,16 @@ export function formsRoutes(): Router {
             submittedAt: submission.createdAt,
           }),
         }).catch(() => {});
+      }
+
+      const mapping = form.crmLeadMapping as { nameField?: string; emailField?: string } | null;
+      if (mapping && mapping.nameField && mapping.emailField) {
+        crmService.createLeadFromFormSubmission(
+          form.workspaceId,
+          form.siteId,
+          { nameField: mapping.nameField, emailField: mapping.emailField },
+          payload,
+        ).catch(() => {});
       }
 
       res.json({

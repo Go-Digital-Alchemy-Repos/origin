@@ -1574,6 +1574,104 @@ Blog posts automatically include Article structured data (schema.org) for rich s
     sortOrder: 24,
     isPublished: true,
   },
+  {
+    title: "CRM App Overview",
+    slug: "crm-app-overview",
+    content: `The CRM App is an add-on module that lets you track leads and contacts directly within ORIGIN.
+
+## Feature Gating
+
+The CRM requires the "crm" entitlement on your workspace. Contact your administrator to enable it.
+
+## Architecture
+
+The CRM module lives in \`server/modules/apps/crm/\` and follows the standard repo → service → routes pattern.
+
+### Tables
+
+- **crm_leads** — Potential customers with name, email, source, and status workflow (new → contacted → qualified → converted/lost)
+- **crm_contacts** — Converted leads or manually added contacts with name, email, and phone
+- **crm_notes** — Text notes attachable to either a lead or a contact via nullable foreign keys
+
+### Routes (all prefixed \`/api/crm/\`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /leads | List workspace leads |
+| POST | /leads | Create lead |
+| PATCH | /leads/:id | Update lead |
+| DELETE | /leads/:id | Delete lead |
+| POST | /leads/:id/convert | Convert lead → contact |
+| GET | /contacts | List workspace contacts |
+| POST | /contacts | Create contact |
+| PATCH | /contacts/:id | Update contact |
+| DELETE | /contacts/:id | Delete contact |
+| GET | /notes | List notes (filter by leadId or contactId) |
+| POST | /notes | Create note |
+| DELETE | /notes/:id | Delete note |
+
+### Forms Integration
+
+Forms can auto-create leads on submission via the \`crmLeadMapping\` JSON field, which maps form field labels to lead properties (nameField, emailField).`,
+    category: "architecture",
+    type: "developer",
+    tags: ["crm", "leads", "contacts", "add-on", "entitlement"],
+    sortOrder: 25,
+    isPublished: true,
+  },
+  {
+    title: "Managing Leads & Contacts",
+    slug: "managing-leads-contacts",
+    content: `The CRM helps you track potential and existing customers.
+
+## Leads
+
+Leads represent potential customers. Each lead has a name, email, source, and status.
+
+### Adding Leads
+
+1. Navigate to **Leads** in the sidebar
+2. Click **Add Lead**
+3. Enter the name, email, and source
+4. The lead starts with status **New**
+
+### Lead Status Workflow
+
+- **New** — Just added, not yet contacted
+- **Contacted** — You've reached out
+- **Qualified** — Good prospect
+- **Converted** — Became a contact (via the Convert button)
+- **Lost** — Did not convert
+
+### Converting Leads
+
+Click **Convert to Contact** on any lead detail page. This:
+- Creates a new contact with the lead's name and email
+- Sets the lead status to "Converted"
+
+## Contacts
+
+Contacts are your active customers or partners.
+
+### Adding Contacts
+
+1. Navigate to **Contacts** in the sidebar
+2. Click **Add Contact**
+3. Enter name, email, and optional phone number
+
+## Notes
+
+Attach notes to any lead or contact to track interactions and history.
+
+## Automatic Lead Capture
+
+Connect a form to the CRM by configuring the **CRM Lead Mapping** in the form settings. Map form fields to lead name and email to auto-create leads when visitors submit the form.`,
+    category: "help",
+    type: "help",
+    tags: ["crm", "leads", "contacts", "notes", "forms"],
+    sortOrder: 25,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [
