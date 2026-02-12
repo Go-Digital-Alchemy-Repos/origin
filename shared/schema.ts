@@ -395,3 +395,83 @@ export const insertPageRevisionSchema = createInsertSchema(pageRevisions).omit({
 
 export type InsertPageRevision = z.infer<typeof insertPageRevisionSchema>;
 export type PageRevision = typeof pageRevisions.$inferSelect;
+
+export const collectionFieldTypeEnum = z.enum([
+  "text",
+  "richtext",
+  "number",
+  "boolean",
+  "date",
+  "image",
+  "select",
+  "multiselect",
+  "url",
+]);
+export type CollectionFieldType = z.infer<typeof collectionFieldTypeEnum>;
+
+export const collectionFieldSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  type: collectionFieldTypeEnum,
+  required: z.boolean().default(false),
+  description: z.string().optional(),
+  options: z.array(z.string()).optional(),
+  defaultValue: z.unknown().optional(),
+});
+export type CollectionField = z.infer<typeof collectionFieldSchema>;
+
+export const collections = pgTable("collections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  schemaJson: jsonb("schema_json").notNull().default(sql`'[]'::jsonb`),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCollectionSchema = createInsertSchema(collections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCollection = z.infer<typeof insertCollectionSchema>;
+export type Collection = typeof collections.$inferSelect;
+
+export const collectionItems = pgTable("collection_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  collectionId: varchar("collection_id").notNull().references(() => collections.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("DRAFT"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCollectionItemSchema = createInsertSchema(collectionItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCollectionItem = z.infer<typeof insertCollectionItemSchema>;
+export type CollectionItem = typeof collectionItems.$inferSelect;
+
+export const collectionItemRevisions = pgTable("collection_item_revisions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  itemId: varchar("item_id").notNull().references(() => collectionItems.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  dataJson: jsonb("data_json").notNull().default(sql`'{}'::jsonb`),
+  createdByUserId: varchar("created_by_user_id").references(() => users.id),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCollectionItemRevisionSchema = createInsertSchema(collectionItemRevisions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCollectionItemRevision = z.infer<typeof insertCollectionItemRevisionSchema>;
+export type CollectionItemRevision = typeof collectionItemRevisions.$inferSelect;
