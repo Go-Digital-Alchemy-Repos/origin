@@ -6,6 +6,21 @@ import { requireAuth, requireRole, requireWorkspaceContext } from "../shared/aut
 import { createMarketplaceCheckoutSession } from "../billing/billing.service";
 import { z } from "zod";
 
+const updateItemBody = z.object({
+  name: z.string().optional(),
+  slug: z.string().optional(),
+  description: z.string().optional(),
+  type: z.string().optional(),
+  icon: z.string().optional(),
+  category: z.string().optional(),
+  isFree: z.boolean().optional(),
+  billingType: z.string().optional(),
+  priceId: z.string().optional(),
+  minPlatformVersion: z.string().optional(),
+}).partial();
+
+const itemIdBody = z.object({ itemId: z.string().min(1) });
+
 export function marketplaceRoutes(): Router {
   const router = Router();
 
@@ -41,7 +56,7 @@ export function marketplaceRoutes(): Router {
     }
   });
 
-  router.patch("/items/:id", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), async (req, res, next) => {
+  router.patch("/items/:id", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), validateBody(updateItemBody), async (req, res, next) => {
     try {
       const item = await marketplaceService.updateItem(req.params.id, req.body);
       res.json(item);
@@ -79,7 +94,7 @@ export function marketplaceRoutes(): Router {
     }
   });
 
-  router.post("/install", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
+  router.post("/install", requireAuth(), requireWorkspaceContext(), validateBody(itemIdBody), async (req, res, next) => {
     try {
       const workspaceId = req.session!.activeWorkspaceId!;
       const { itemId } = req.body;
@@ -90,7 +105,7 @@ export function marketplaceRoutes(): Router {
     }
   });
 
-  router.post("/uninstall", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
+  router.post("/uninstall", requireAuth(), requireWorkspaceContext(), validateBody(itemIdBody), async (req, res, next) => {
     try {
       const workspaceId = req.session!.activeWorkspaceId!;
       const { itemId } = req.body;
@@ -101,15 +116,11 @@ export function marketplaceRoutes(): Router {
     }
   });
 
-  router.post("/checkout", requireAuth(), requireWorkspaceContext(), async (req: Request, res: Response, next) => {
+  router.post("/checkout", requireAuth(), requireWorkspaceContext(), validateBody(itemIdBody), async (req: Request, res: Response, next) => {
     try {
       const workspaceId = req.session!.activeWorkspaceId!;
       const user = req.user!;
       const { itemId } = req.body;
-
-      if (!itemId) {
-        return res.status(400).json({ error: { message: "itemId is required", code: "VALIDATION_ERROR" } });
-      }
 
       const item = await marketplaceService.getItemById(itemId);
 
@@ -145,7 +156,7 @@ export function marketplaceRoutes(): Router {
     }
   });
 
-  router.post("/preview/start", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
+  router.post("/preview/start", requireAuth(), requireWorkspaceContext(), validateBody(itemIdBody), async (req, res, next) => {
     try {
       const workspaceId = req.session!.activeWorkspaceId!;
       const { itemId } = req.body;
@@ -156,7 +167,7 @@ export function marketplaceRoutes(): Router {
     }
   });
 
-  router.post("/preview/end", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
+  router.post("/preview/end", requireAuth(), requireWorkspaceContext(), validateBody(itemIdBody), async (req, res, next) => {
     try {
       const workspaceId = req.session!.activeWorkspaceId!;
       const { itemId } = req.body;
@@ -200,10 +211,9 @@ export function marketplaceRoutes(): Router {
     notes: z.string().min(1, "Changelog notes are required"),
   });
 
-  router.post("/items/:id/bump-version", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), async (req, res, next) => {
+  router.post("/items/:id/bump-version", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), validateBody(bumpVersionBody), async (req, res, next) => {
     try {
-      const parsed = bumpVersionBody.parse(req.body);
-      const result = await marketplaceService.bumpItemVersion(req.params.id, parsed.bumpType, parsed.notes);
+      const result = await marketplaceService.bumpItemVersion(req.params.id, req.body.bumpType, req.body.notes);
       res.json(result);
     } catch (err) {
       next(err);
@@ -215,10 +225,9 @@ export function marketplaceRoutes(): Router {
     notes: z.string().min(1, "Changelog notes are required"),
   });
 
-  router.post("/items/:id/set-version", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), async (req, res, next) => {
+  router.post("/items/:id/set-version", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), validateBody(setVersionBody), async (req, res, next) => {
     try {
-      const parsed = setVersionBody.parse(req.body);
-      const result = await marketplaceService.setItemVersion(req.params.id, parsed.version, parsed.notes);
+      const result = await marketplaceService.setItemVersion(req.params.id, req.body.version, req.body.notes);
       res.json(result);
     } catch (err) {
       next(err);
@@ -229,10 +238,9 @@ export function marketplaceRoutes(): Router {
     message: z.string().optional(),
   });
 
-  router.post("/items/:id/deprecate", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), async (req, res, next) => {
+  router.post("/items/:id/deprecate", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), validateBody(deprecateBody), async (req, res, next) => {
     try {
-      const parsed = deprecateBody.parse(req.body);
-      const item = await marketplaceService.deprecateItem(req.params.id, parsed.message);
+      const item = await marketplaceService.deprecateItem(req.params.id, req.body.message);
       res.json(item);
     } catch (err) {
       next(err);

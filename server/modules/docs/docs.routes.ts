@@ -109,7 +109,7 @@ export function docsRoutes(): Router {
     }
   });
 
-  router.patch("/:id", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), async (req, res, next) => {
+  router.patch("/:id", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), validateBody(insertDocEntrySchema.partial()), async (req, res, next) => {
     try {
       const doc = await docsService.update(req.params.id, req.body);
       res.json(doc);

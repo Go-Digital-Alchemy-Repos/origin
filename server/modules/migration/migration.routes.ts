@@ -1,9 +1,15 @@
 import { Router } from "express";
 import { migrationService } from "./migration.service";
 import { requireAuth, requireWorkspaceContext, getWorkspaceId } from "../shared/auth-middleware";
+import { validateBody } from "../shared/validate";
 import { z } from "zod";
 
 const MAX_UPLOAD_SIZE = 50 * 1024 * 1024;
+
+const wpImportBody = z.object({
+  xmlContent: z.string().min(1, "XML content is required"),
+  fileName: z.string().min(1, "File name is required"),
+});
 
 export function migrationRoutes(): Router {
   const router = Router();
@@ -63,6 +69,7 @@ export function migrationRoutes(): Router {
     "/sites/:siteId/migration/wp-import",
     requireAuth(),
     requireWorkspaceContext(),
+    validateBody(wpImportBody),
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
@@ -71,12 +78,7 @@ export function migrationRoutes(): Router {
         const owns = await migrationService.verifySiteOwnership(req.params.siteId, workspaceId);
         if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace", code: "NOT_FOUND" } });
 
-        const body = z.object({
-          xmlContent: z.string().min(1, "XML content is required"),
-          fileName: z.string().min(1, "File name is required"),
-        }).parse(req.body);
-
-        if (body.xmlContent.length > MAX_UPLOAD_SIZE) {
+        if (req.body.xmlContent.length > MAX_UPLOAD_SIZE) {
           return res.status(400).json({ error: { message: "File too large (max 50MB)", code: "VALIDATION_ERROR" } });
         }
 
@@ -84,8 +86,8 @@ export function migrationRoutes(): Router {
           workspaceId,
           req.params.siteId,
           req.user!.id,
-          body.xmlContent,
-          body.fileName,
+          req.body.xmlContent,
+          req.body.fileName,
         );
 
         res.status(201).json(job);

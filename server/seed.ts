@@ -1717,6 +1717,198 @@ The importer automatically creates redirect suggestions mapping old WordPress UR
     sortOrder: 26,
     isPublished: true,
   },
+  {
+    title: "Marketplace Versioning & Deprecation",
+    slug: "marketplace-versioning",
+    content: `The marketplace versioning system enables safe, non-destructive lifecycle management of marketplace items. It provides semantic versioning (SemVer), version tracking for installs, deprecation with messaging, platform compatibility checks, and a full changelog history.
+
+## Schema Changes
+
+### marketplace_items (extended)
+- version — SemVer string (MAJOR.MINOR.PATCH), defaults to "1.0.0"
+- deprecated — Whether item is deprecated (hidden from new installs)
+- deprecation_message — Optional message shown to existing users
+- min_platform_version — Minimum platform version required for install
+
+### marketplace_installs (extended)
+- installed_version — Version at time of install
+
+### marketplace_changelogs (new table)
+- id — UUID primary key
+- item_id — FK to marketplace_items
+- version — Version this entry describes
+- change_type — "major", "minor", "patch", or "custom"
+- notes — Changelog description
+- created_at — When created
+
+## API Routes
+
+### Admin Routes (require SUPER_ADMIN or AGENCY_ADMIN)
+- GET /api/marketplace/admin/items — List all items (including deprecated)
+- POST /api/marketplace/items/:id/bump-version — Bump version with changelog
+- POST /api/marketplace/items/:id/set-version — Set specific version
+- POST /api/marketplace/items/:id/deprecate — Mark item as deprecated
+- POST /api/marketplace/items/:id/undeprecate — Restore deprecated item
+
+### Public Routes (require auth)
+- GET /api/marketplace/items/:id/changelogs — Get changelog for item
+- GET /api/marketplace/items/:id/compatibility — Check platform compatibility
+
+## Versioning Helpers
+
+Located in server/modules/marketplace/versioning.ts:
+- parseSemVer(version) — Parse "1.2.3" into { major, minor, patch }
+- isValidSemVer(version) — Validate SemVer format
+- compareSemVer(a, b) — Compare two versions (-1, 0, 1)
+- bumpVersion(current, type) — Increment version by type
+- checkCompatibility(minVersion, platformVersion) — Check platform compatibility
+
+## Design Decisions
+
+1. Non-destructive deprecation: Deprecated items remain installed and functional for existing users. They are only hidden from new installation listings.
+2. Version tracking: installedVersion captures which version a workspace originally installed.
+3. Compatibility gating: minPlatformVersion prevents installs on incompatible platform versions.
+4. Changelog immutability: Changelog entries are append-only and tied to specific versions.
+
+## File Structure
+
+- server/modules/marketplace/versioning.ts — SemVer helpers
+- server/modules/marketplace/marketplace.repo.ts — Database queries
+- server/modules/marketplace/marketplace.service.ts — Business logic
+- server/modules/marketplace/marketplace.routes.ts — API endpoints
+- client/src/pages/studio-marketplace.tsx — Super Admin management UI
+- client/src/pages/marketplace.tsx — Client marketplace`,
+    category: "guides",
+    type: "developer",
+    tags: ["marketplace", "versioning", "deprecation", "semver"],
+    sortOrder: 23,
+    isPublished: true,
+  },
+  {
+    title: "WordPress Migration & Import",
+    slug: "wordpress-migration",
+    content: `The WordPress migration module provides a non-destructive import pipeline that converts a WordPress WXR (XML) export into ORIGIN entities. All imported content arrives as DRAFT, giving editors full control before publishing.
+
+## Architecture
+
+The migration module is located at server/modules/migration/ and consists of:
+- index.ts — Module entry, exports createMigrationModule()
+- migration.routes.ts — API endpoints
+- migration.service.ts — Orchestrator: parse, import, redirect suggestions
+- wpParser.ts — Stateless WP XML parser (fast-xml-parser)
+
+## Database Tables
+
+### migration_jobs
+Tracks each import job with: id, workspace_id, site_id, created_by_user_id, source (always "wordpress"), status (pending/running/completed/failed), file_name, summary (jsonb post-import stats), created_at, completed_at.
+
+### migration_logs
+Per-job log entries with: id, job_id, level (info/warn/error), message, meta (jsonb), created_at.
+
+## API Routes
+
+All routes require authentication and workspace context.
+
+- GET /api/migration/jobs — List workspace jobs
+- GET /api/migration/jobs/:jobId — Get single job
+- GET /api/migration/jobs/:jobId/logs — Get job log entries
+- POST /api/sites/:siteId/migration/wp-import — Start a WP import
+
+### Import Request Body
+xmlContent (string, full WP XML export) and fileName (string). Max size: 50 MB.
+
+## Import Pipeline
+
+1. Parse — wpParser.parseWpExport(xml) extracts pages, posts, and media
+2. Import Pages — Each WP page becomes an ORIGIN CMS page (DRAFT) with slug collision resolution
+3. Import Posts — Creates blog-posts collection if needed, maps each post to a collection item (DRAFT)
+4. Import Media — Logs attachment URLs (no file download)
+5. Redirect Suggestions — Generates redirect_suggestions rows mapping old WP permalinks to new ORIGIN paths
+
+## Non-Destructive Guarantees
+
+- All content imported as DRAFT
+- Slug collisions resolved with unique suffixes (never overwrites)
+- Redirect suggestions are proposals, not active redirects
+- Media referenced but not downloaded
+- Existing site content never modified or deleted
+
+## Frontend
+
+The migration wizard (client/src/pages/migration.tsx) provides upload, progress, results summary, and job history views.`,
+    category: "guides",
+    type: "developer",
+    tags: ["migration", "wordpress", "import"],
+    sortOrder: 24,
+    isPublished: true,
+  },
+  {
+    title: "Site Kits System",
+    slug: "site-kits-system",
+    content: `Site Kits are bundled starter packages that combine theme presets, page templates, section presets, collection schemas, and starter content into a single installable unit. They allow platform administrators to create curated website starter experiences that workspace users can install to quickly scaffold a new site.
+
+## Database Tables
+
+### site_kits
+Stores kit metadata: id, name, slug (unique), description, version (SemVer, default "1.0.0"), cover_image, metadata_json, status (draft/published), marketplace_item_id (FK to marketplace_items), created_at, updated_at.
+
+### site_kit_assets
+Stores individual assets within a kit: id, site_kit_id (FK, cascade delete), asset_type (theme_preset, page_template, section_preset, collection_schema, starter_content), asset_ref, label, config_json, sort_order, created_at.
+
+## API Routes
+
+All routes are mounted under /api/site-kits.
+
+### Admin Routes (SUPER_ADMIN or AGENCY_ADMIN)
+- GET / — List all site kits
+- POST / — Create a new site kit
+- PATCH /:id — Update a site kit
+- DELETE /:id — Delete a draft site kit
+- POST /:id/publish — Publish a site kit
+- POST /:id/unpublish — Unpublish a site kit
+- POST /:id/assets — Add an asset
+- PATCH /assets/:assetId — Update an asset
+- DELETE /assets/:assetId — Remove an asset
+
+### Authenticated Routes
+- GET /:id — Get a single kit
+- GET /:id/assets — List assets for a kit
+- GET /:id/manifest — Get full manifest with grouped assets and summary
+
+### Public Routes
+- GET /published — List published kits
+
+### Install Route (auth + workspace context)
+- POST /:id/install — Install a published kit to a workspace site (body: { siteId })
+
+## Publishing Flow
+
+1. Admin creates a kit and adds assets (must include at least one theme_preset)
+2. POST /:id/publish validates assets and sets status to "published"
+3. A marketplace item (type: site-kit, free) is auto-created or updated
+4. Unpublishing reverts both the kit and marketplace item to draft
+
+## Install Flow
+
+1. User provides a target siteId for a published kit
+2. Service retrieves the full manifest grouped by asset type
+3. Assets are applied: theme presets, page templates, section presets, collection schemas, and starter content
+4. Returns a summary of everything installed
+
+## File Structure
+
+- server/modules/siteKits/index.ts — Module entry
+- server/modules/siteKits/siteKits.routes.ts — Route handlers
+- server/modules/siteKits/siteKits.service.ts — Business logic
+- server/modules/siteKits/siteKits.repo.ts — Database access
+- client/src/pages/site-kits.tsx — Studio management UI
+- shared/schema.ts — Database schema (siteKits, siteKitAssets tables)`,
+    category: "guides",
+    type: "developer",
+    tags: ["site-kits", "templates", "presets"],
+    sortOrder: 25,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [

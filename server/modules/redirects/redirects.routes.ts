@@ -16,6 +16,8 @@ const updateRedirectBody = z.object({
   code: z.number().int().refine((v) => v === 301 || v === 302, { message: "Code must be 301 or 302" }).optional(),
 });
 
+const importCsvBody = z.object({ csv: z.string().min(1) });
+
 export function redirectsRoutes(): Router {
   const router = Router();
 
@@ -41,18 +43,18 @@ export function redirectsRoutes(): Router {
     "/sites/:siteId/redirects",
     requireAuth(),
     requireWorkspaceContext(),
+    validateBody(createRedirectBody),
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
         if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const owns = await redirectsService.verifySiteOwnership(req.params.siteId, workspaceId);
         if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace", code: "NOT_FOUND" } });
-        const parsed = createRedirectBody.parse(req.body);
         const redirect = await redirectsService.createRedirect({
           siteId: req.params.siteId,
-          fromPath: parsed.fromPath,
-          toUrl: parsed.toUrl,
-          code: parsed.code,
+          fromPath: req.body.fromPath,
+          toUrl: req.body.toUrl,
+          code: req.body.code,
         });
         res.status(201).json(redirect);
       } catch (err) {
@@ -65,14 +67,14 @@ export function redirectsRoutes(): Router {
     "/redirects/:redirectId",
     requireAuth(),
     requireWorkspaceContext(),
+    validateBody(updateRedirectBody),
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
         if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const existing = await redirectsService.verifyRedirectOwnership(req.params.redirectId, workspaceId);
         if (!existing) return res.status(404).json({ error: { message: "Redirect not found", code: "NOT_FOUND" } });
-        const parsed = updateRedirectBody.parse(req.body);
-        const updated = await redirectsService.updateRedirect(req.params.redirectId, parsed);
+        const updated = await redirectsService.updateRedirect(req.params.redirectId, req.body);
         res.json(updated);
       } catch (err) {
         next(err);
@@ -102,6 +104,7 @@ export function redirectsRoutes(): Router {
     "/sites/:siteId/redirects/import",
     requireAuth(),
     requireWorkspaceContext(),
+    validateBody(importCsvBody),
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
@@ -109,13 +112,7 @@ export function redirectsRoutes(): Router {
         const owns = await redirectsService.verifySiteOwnership(req.params.siteId, workspaceId);
         if (!owns) return res.status(404).json({ error: { message: "Site not found in this workspace", code: "NOT_FOUND" } });
 
-        const body = z
-          .object({
-            csv: z.string().min(1),
-          })
-          .parse(req.body);
-
-        const rows = parseCsv(body.csv);
+        const rows = parseCsv(req.body.csv);
         if (rows.length === 0) {
           return res.status(400).json({ error: { message: "No valid rows found in CSV", code: "VALIDATION_ERROR" } });
         }

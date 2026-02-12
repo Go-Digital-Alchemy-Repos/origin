@@ -66,16 +66,16 @@ export function cmsPagesRoutes(): Router {
     "/sites/:siteId/pages",
     requireAuth(),
     requireWorkspaceContext(),
+    validateBody(createPageBody),
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
         if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
 
-        const parsed = createPageBody.parse(req.body);
         const result = await cmsPagesService.createPage(
-          { ...parsed, siteId: req.params.siteId, workspaceId },
+          { ...req.body, siteId: req.params.siteId, workspaceId },
           req.user!.id,
-          parsed.contentJson,
+          req.body.contentJson,
         );
         res.status(201).json(result);
       } catch (err) {
@@ -99,7 +99,7 @@ export function cmsPagesRoutes(): Router {
     }
   });
 
-  router.patch("/pages/:pageId", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
+  router.patch("/pages/:pageId", requireAuth(), requireWorkspaceContext(), validateBody(updatePageBody), async (req, res, next) => {
     try {
       const workspaceId = getWorkspaceId(req);
       if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
@@ -107,8 +107,7 @@ export function cmsPagesRoutes(): Router {
       const page = await cmsPagesService.getPageForWorkspace(req.params.pageId, workspaceId);
       if (!page) return res.status(404).json({ error: { message: "Page not found", code: "NOT_FOUND" } });
 
-      const parsed = updatePageBody.parse(req.body);
-      const { note, ...data } = parsed;
+      const { note, ...data } = req.body;
       const result = await cmsPagesService.updatePage(req.params.pageId, data, req.user!.id, note);
       res.json(result);
     } catch (err) {
@@ -120,6 +119,7 @@ export function cmsPagesRoutes(): Router {
     "/pages/:pageId/publish",
     requireAuth(),
     requireWorkspaceContext(),
+    validateBody(z.object({ contentJson: z.any().optional() })),
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
@@ -128,7 +128,7 @@ export function cmsPagesRoutes(): Router {
         const page = await cmsPagesService.getPageForWorkspace(req.params.pageId, workspaceId);
         if (!page) return res.status(404).json({ error: { message: "Page not found", code: "NOT_FOUND" } });
 
-        const { contentJson } = req.body || {};
+        const { contentJson } = req.body;
         const result = await cmsPagesService.publishPage(req.params.pageId, req.user!.id, contentJson);
         purgeCache(page.siteId, page.slug);
         res.json(result);

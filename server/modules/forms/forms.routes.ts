@@ -47,17 +47,17 @@ export function formsRoutes(): Router {
     "/sites/:siteId/forms",
     requireAuth(),
     requireWorkspaceContext(),
+    validateBody(createFormBody),
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
         if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
-        const parsed = createFormBody.parse(req.body);
         const form = await formsService.createForm({
-          name: parsed.name,
+          name: req.body.name,
           siteId: req.params.siteId,
           workspaceId,
-          fieldsJson: parsed.fieldsJson ?? [],
-          settingsJson: parsed.settingsJson ?? {},
+          fieldsJson: req.body.fieldsJson ?? [],
+          settingsJson: req.body.settingsJson ?? {},
         });
         res.status(201).json(form);
       } catch (err) {
@@ -87,14 +87,14 @@ export function formsRoutes(): Router {
     "/forms/:formId",
     requireAuth(),
     requireWorkspaceContext(),
+    validateBody(updateFormBody),
     async (req, res, next) => {
       try {
         const workspaceId = getWorkspaceId(req);
         if (!workspaceId) return res.status(400).json({ error: { message: "Workspace required", code: "VALIDATION_ERROR" } });
         const form = await formsService.getFormForWorkspace(req.params.formId, workspaceId);
         if (!form) return res.status(404).json({ error: { message: "Form not found", code: "NOT_FOUND" } });
-        const parsed = updateFormBody.parse(req.body);
-        const updated = await formsService.updateForm(req.params.formId, parsed);
+        const updated = await formsService.updateForm(req.params.formId, req.body);
         res.json(updated);
       } catch (err) {
         next(err);

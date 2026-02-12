@@ -1,6 +1,8 @@
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { requireAuth, requireWorkspaceContext } from "../shared/auth-middleware";
 import Stripe from "stripe";
+import { z } from "zod";
+import { validateBody } from "../shared/validate";
 import {
   createCheckoutSession,
   createPortalSession,
@@ -10,10 +12,15 @@ import {
 } from "./billing.service";
 import { log } from "../../index";
 
+const checkoutBody = z.object({
+  plan: z.enum(["starter", "pro", "enterprise"]),
+  siteQuantity: z.number().int().positive().optional().default(1),
+});
+
 export function createBillingRoutes(): Router {
   const router = Router();
 
-  router.get("/status", requireAuth(), requireWorkspaceContext(), async (req: Request, res: Response) => {
+  router.get("/status", requireAuth(), requireWorkspaceContext(), async (req: Request, res: Response, next: NextFunction) => {
     try {
       const workspaceId = req.session!.activeWorkspaceId!;
       const status = await getBillingStatus(workspaceId);
@@ -21,21 +28,18 @@ export function createBillingRoutes(): Router {
         configured: isStripeConfigured(),
         ...status,
       });
-    } catch (err: any) {
-      res.status(500).json({ error: { message: err.message, code: "BILLING_ERROR" } });
+    } catch (err) {
+      next(err);
     }
   });
 
-  router.post("/checkout", requireAuth(), requireWorkspaceContext(), async (req: Request, res: Response) => {
+  router.post("/checkout", requireAuth(), requireWorkspaceContext(), validateBody(checkoutBody), async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!isStripeConfigured()) {
         return res.status(503).json({ error: { message: "Stripe is not configured", code: "STRIPE_NOT_CONFIGURED" } });
       }
 
-      const { plan, siteQuantity = 1 } = req.body;
-      if (!plan || !["starter", "pro", "enterprise"].includes(plan)) {
-        return res.status(400).json({ error: { message: "Invalid plan", code: "VALIDATION_ERROR" } });
-      }
+      const { plan, siteQuantity } = req.body;
 
       const workspaceId = req.session!.activeWorkspaceId!;
       const user = req.user!;
@@ -55,13 +59,13 @@ export function createBillingRoutes(): Router {
       );
 
       res.json({ url: session.url });
-    } catch (err: any) {
-      log(`Checkout error: ${err.message}`, "billing");
-      res.status(500).json({ error: { message: err.message, code: "CHECKOUT_ERROR" } });
+    } catch (err) {
+      log(`Checkout error: ${err instanceof Error ? err.message : String(err)}`, "billing");
+      next(err);
     }
   });
 
-  router.post("/portal", requireAuth(), requireWorkspaceContext(), async (req: Request, res: Response) => {
+  router.post("/portal", requireAuth(), requireWorkspaceContext(), async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!isStripeConfigured()) {
         return res.status(503).json({ error: { message: "Stripe is not configured", code: "STRIPE_NOT_CONFIGURED" } });
@@ -75,9 +79,9 @@ export function createBillingRoutes(): Router {
 
       const session = await createPortalSession(workspaceId, returnUrl);
       res.json({ url: session.url });
-    } catch (err: any) {
-      log(`Portal error: ${err.message}`, "billing");
-      res.status(500).json({ error: { message: err.message, code: "PORTAL_ERROR" } });
+    } catch (err) {
+      log(`Portal error: ${err instanceof Error ? err.message : String(err)}`, "billing");
+      next(err);
     }
   });
 
