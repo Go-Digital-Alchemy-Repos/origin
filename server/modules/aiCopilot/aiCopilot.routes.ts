@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import OpenAI from "openai";
 import { requireAuth, requireWorkspaceContext, getWorkspaceId } from "../shared/auth-middleware";
 import { validateBody } from "../shared/validate";
 import { buildWorkspaceContext } from "./context-builder";
@@ -88,35 +89,19 @@ export function aiCopilotRoutes(): Router {
       const ctx = await buildWorkspaceContext(workspaceId);
       const prompt = buildPrompt(template, ctx, message);
 
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: prompt.systemMessage },
-            { role: "user", content: prompt.userMessage },
-          ],
-          temperature: 0.7,
-          max_tokens: 1024,
-        }),
+      const openai = new OpenAI({ apiKey });
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: prompt.systemMessage },
+          { role: "user", content: prompt.userMessage },
+        ],
+        temperature: 0.7,
+        max_tokens: 1024,
       });
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        return res.status(502).json({
-          error: {
-            message: `OpenAI API error: ${response.status}`,
-            code: "AI_API_ERROR",
-          },
-        });
-      }
-
-      const data = await response.json() as any;
-      const assistantMessage = data.choices?.[0]?.message?.content ?? "No response generated.";
+      const assistantMessage = completion.choices?.[0]?.message?.content ?? "No response generated.";
 
       res.json({
         message: assistantMessage,
