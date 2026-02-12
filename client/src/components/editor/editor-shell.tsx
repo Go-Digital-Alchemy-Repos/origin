@@ -33,6 +33,9 @@ import {
   List,
   Square,
   MousePointer,
+  Contact,
+  Users,
+  ArrowRightLeft,
 } from "lucide-react";
 import {
   EditorPanel,
@@ -261,13 +264,52 @@ const RightRail = memo(function RightRail() {
           </EditorSection>
         )}
         {activeTab === "cms" && (
-          <EditorSection title="CMS Bindings">
-            <EditorEmptyState
-              icon={<Database className="h-5 w-5" />}
-              title="CMS bindings"
-              description="Connect element properties to CMS collection fields"
-            />
-          </EditorSection>
+          <>
+            <EditorSection title="CMS Bindings">
+              <EditorEmptyState
+                icon={<Database className="h-5 w-5" />}
+                title="CMS bindings"
+                description="Connect element properties to CMS collection fields"
+              />
+            </EditorSection>
+            <EditorSection title="CRM" defaultOpen={false}>
+              <div className="space-y-2" data-testid="editor-crm-section">
+                <div
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 rounded-md",
+                    "text-[12px] text-[hsl(var(--editor-muted))]",
+                    "cursor-default"
+                  )}
+                >
+                  <Contact className="h-3.5 w-3.5" />
+                  <span>Bind to Lead fields</span>
+                </div>
+                <div
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 rounded-md",
+                    "text-[12px] text-[hsl(var(--editor-muted))]",
+                    "cursor-default"
+                  )}
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  <span>Bind to Contact fields</span>
+                </div>
+                <div
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 rounded-md",
+                    "text-[12px] text-[hsl(var(--editor-muted))]",
+                    "cursor-default"
+                  )}
+                >
+                  <ArrowRightLeft className="h-3.5 w-3.5" />
+                  <span>Lead capture form mapping</span>
+                </div>
+                <p className="text-[11px] text-[hsl(var(--editor-muted))] px-2 opacity-60">
+                  Select a CRM-bound component to configure data bindings
+                </p>
+              </div>
+            </EditorSection>
+          </>
         )}
       </EditorPanelBody>
     </EditorPanel>
