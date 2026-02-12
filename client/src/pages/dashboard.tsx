@@ -96,14 +96,18 @@ interface OnboardingState {
 }
 
 function OnboardingChecklist() {
-  const { data: onboarding } = useQuery<OnboardingState>({
-    queryKey: ["/api/onboarding/state"],
-  });
-
   const { data: meData } = useQuery<{
     user: { role: string };
+    activeWorkspaceId: string | null;
   }>({
     queryKey: ["/api/user/me"],
+  });
+
+  const hasWorkspace = !!meData?.activeWorkspaceId;
+
+  const { data: onboarding } = useQuery<OnboardingState>({
+    queryKey: ["/api/onboarding/state"],
+    enabled: hasWorkspace,
   });
 
   const recomputeMutation = useMutation({
@@ -125,8 +129,10 @@ function OnboardingChecklist() {
   });
 
   useEffect(() => {
-    recomputeMutation.mutate();
-  }, []);
+    if (hasWorkspace) {
+      recomputeMutation.mutate();
+    }
+  }, [hasWorkspace]);
 
   if (!onboarding || !onboarding.wizardCompleted || onboarding.dismissed) {
     return null;

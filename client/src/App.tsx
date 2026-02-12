@@ -251,12 +251,21 @@ function AppLayout() {
   const { data: session, isPending } = useSession();
   const [, setLocation] = useLocation();
 
+  const { data: meData } = useQuery<{
+    activeWorkspaceId: string | null;
+  }>({
+    queryKey: ["/api/user/me"],
+    enabled: !!session?.user,
+  });
+
+  const hasWorkspace = !!meData?.activeWorkspaceId;
+
   const { data: onboarding, isLoading: onboardingLoading } = useQuery<{
     wizardCompleted: boolean;
     wizardStep: string;
   }>({
     queryKey: ["/api/onboarding/state"],
-    enabled: !!session?.user,
+    enabled: !!session?.user && hasWorkspace,
   });
 
   useEffect(() => {
@@ -266,12 +275,12 @@ function AppLayout() {
   }, [isPending, session, setLocation]);
 
   useEffect(() => {
-    if (onboarding && !onboarding.wizardCompleted) {
+    if (hasWorkspace && onboarding && !onboarding.wizardCompleted) {
       setLocation("/onboarding");
     }
-  }, [onboarding, setLocation]);
+  }, [onboarding, hasWorkspace, setLocation]);
 
-  if (isPending || onboardingLoading) {
+  if (isPending || (hasWorkspace && onboardingLoading)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
