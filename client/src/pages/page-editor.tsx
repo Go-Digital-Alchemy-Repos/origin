@@ -37,6 +37,9 @@ import type { BuilderContent } from "@/lib/builder/types";
 import { isBuilderContent } from "@/lib/builder/types";
 
 const PuckEditorWrapper = lazy(() => import("@/components/builder/PuckEditor"));
+const EditorShell = lazy(() => import("@/components/editor/editor-shell"));
+
+const USE_EDITOR_SHELL = import.meta.env.VITE_EDITOR_SHELL === "true";
 
 type PageWithRevision = Page & { latestRevision?: PageRevision };
 
@@ -217,13 +220,14 @@ export default function PageEditorPage() {
   const hasBuilderContent = isBuilderContent(currentContentParsed);
 
   if (builderOpen) {
+    const BuilderComponent = USE_EDITOR_SHELL ? EditorShell : PuckEditorWrapper;
     return (
       <Suspense fallback={
         <div className="fixed inset-0 z-50 bg-background flex items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
       }>
-        <PuckEditorWrapper
+        <BuilderComponent
           initialContent={currentContentParsed}
           onSave={handleBuilderSave}
           onPublish={handleBuilderPublish}

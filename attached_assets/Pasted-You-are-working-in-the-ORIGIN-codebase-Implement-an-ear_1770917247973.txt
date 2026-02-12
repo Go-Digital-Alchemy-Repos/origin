@@ -1,0 +1,90 @@
+You are working in the ORIGIN codebase. Implement an early-stage “Webflow-like” Editor UI shell and design primitives so future builder/CMS work inherits the same premium interface.
+
+HARD REQUIREMENTS
+- NON-DESTRUCTIVE: do not remove existing features. Prefer new files + minimal wiring.
+- Inter font must be used everywhere in Admin + Editor UI.
+- Create a reusable 3-pane EditorShell layout:
+  - Left Rail: tabs (“Add”, “Navigator”) + search input stub
+  - Center Canvas: top toolbar + scrollable canvas container
+  - Right Rail: tabs (“Style”, “Settings”, “CMS”) + property sections stub
+- Use consistent tokens for spacing/radius/shadows/borders/focus rings.
+- Keep implementation framework-agnostic to the rest of the app (works whether the canvas is Puck or custom).
+- Add a feature flag ORIGIN_EDITOR_SHELL=true. If false, route continues to old editor.
+- Add lightweight transitions (150–200ms) to hover/focus/active states.
+- Provide clean, premium UI (like Webflow/Figma): subtle borders, proper empty states, consistent padding.
+
+STEP 1 — Audit + Plan
+- Identify current Admin layout components and styling approach (Tailwind? CSS modules? shadcn/ui? custom?).
+- Identify where Inter is set; if missing, add it globally.
+- Identify existing editor routes/pages and where to mount the new shell.
+
+STEP 2 — Add design tokens
+- Create a single source for UI tokens (choose the best fit: CSS variables file, Tailwind config extensions, or a theme module).
+- Tokens must include:
+  - --bg, --panel, --panel2
+  - --border, --border2
+  - --text, --muted
+  - --accent (use ORIGIN blue), --accent2
+  - spacing scale (4/8/12/16/24)
+  - radius scale (8/12/16)
+  - shadow scale (subtle panel shadow)
+  - focus ring (consistent)
+- Ensure dark-friendly neutral palette; editor should look premium on light background by default unless the app is dark-mode.
+- Apply tokens to base elements and form controls.
+
+STEP 3 — Build UI primitives (reusable components)
+Create components (or equivalents in your stack):
+- <Panel> (header + content)
+- <PanelHeader> (title + right actions slot)
+- <Tabs> (small, Webflow-like)
+- <ScrollArea> (nice scrollbars, consistent)
+- <Section> (collapsible optional, but at least a consistent section block)
+- <FieldRow> (label + control)
+- <IconButton> and <Button> with consistent sizes
+- <SearchInput> (stub)
+All components must use the same spacing + border + typography rules.
+
+STEP 4 — EditorShell layout
+Create <EditorShell /> that renders:
+- LeftRail: Tabs (“Add”, “Navigator”); each shows placeholder content; include a search input at top.
+- Center:
+  - TopToolbar with:
+    - page name dropdown stub (“Home”)
+    - breakpoint buttons (Desktop/Tablet/Mobile) stub
+    - undo/redo disabled buttons stub
+    - Preview/Publish buttons stub
+  - CanvasContainer:
+    - centered “page frame” with max width, subtle background, and safe padding
+    - show an empty state card: “Drop components here” if no content
+- RightRail: Tabs (“Style”, “Settings”, “CMS”), each with placeholder sections and form fields.
+
+STEP 5 — Interaction overlay (visual only for now)
+- Add a CanvasOverlay layer component (position: absolute) that can render:
+  - hover outline (fake demo box)
+  - selection outline (fake demo box)
+  - resize handles (visual only)
+- Gate it behind a boolean so it can be enabled later by actual selection logic.
+
+STEP 6 — Wire into app behind a flag
+- Add env var ORIGIN_EDITOR_SHELL or config flag.
+- If true, route /admin/editor (or current editor route) loads the new EditorShell with your existing editor/canvas injected into the center area (or placeholder if not ready).
+- If you already have a builder, mount it inside CanvasContainer.
+
+STEP 7 — Performance hygiene (early)
+- Avoid heavy re-renders:
+  - memoize LeftRail/RightRail
+  - keep canvas content in its own component boundary
+- Ensure scrolling is smooth.
+- Ensure no layout shift when switching tabs.
+
+STEP 8 — Documentation
+- Add an Admin Docs Library entry: “Editor Shell (Webflow-like UI)”
+  - Explain layout, tokens, primitives, feature flag, and where to extend.
+- Note TODOs: undo/redo, real navigator tree, real style manager, CMS bindings.
+
+OUTPUT
+- Provide:
+  - a list of created/modified files
+  - how to enable ORIGIN_EDITOR_SHELL
+  - screenshots not required, but describe where to navigate to see it
+  - any follow-up TODO recommendations
