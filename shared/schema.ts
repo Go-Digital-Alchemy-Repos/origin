@@ -349,3 +349,49 @@ export const insertPreviewSessionSchema = createInsertSchema(previewSessions).om
 
 export type InsertPreviewSession = z.infer<typeof insertPreviewSessionSchema>;
 export type PreviewSession = typeof previewSessions.$inferSelect;
+
+export const pageStatusEnum = z.enum(["DRAFT", "PUBLISHED"]);
+export type PageStatus = z.infer<typeof pageStatusEnum>;
+
+export const pages = pgTable("pages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  slug: text("slug").notNull(),
+  status: text("status").notNull().default("DRAFT"),
+  publishedAt: timestamp("published_at"),
+  seoTitle: text("seo_title"),
+  seoDescription: text("seo_description"),
+  seoImage: text("seo_image"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPageSchema = createInsertSchema(pages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  publishedAt: true,
+});
+
+export type InsertPage = z.infer<typeof insertPageSchema>;
+export type Page = typeof pages.$inferSelect;
+
+export const pageRevisions = pgTable("page_revisions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pageId: varchar("page_id").notNull().references(() => pages.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  contentJson: jsonb("content_json").notNull().default(sql`'{}'::jsonb`),
+  createdByUserId: varchar("created_by_user_id").references(() => users.id),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPageRevisionSchema = createInsertSchema(pageRevisions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertPageRevision = z.infer<typeof insertPageRevisionSchema>;
+export type PageRevision = typeof pageRevisions.$inferSelect;

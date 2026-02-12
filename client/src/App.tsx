@@ -44,6 +44,8 @@ import BillingPage from "@/pages/billing";
 import HelpPage from "@/pages/help";
 import MarketplacePage from "@/pages/marketplace";
 import ComponentRegistryPage from "@/pages/component-registry";
+import CmsPagesPage from "@/pages/cms-pages";
+import PageEditorPage from "@/pages/page-editor";
 
 function AppRouter() {
   return (
@@ -55,7 +57,8 @@ function AppRouter() {
       <Route path="/app/analytics" component={AnalyticsPage} />
       <Route path="/app/settings" component={SettingsPage} />
       <Route path="/app/users" component={UsersAdminPage} />
-      <Route path="/app/pages">{() => <StubPage title="Pages" description="Manage your website pages. Create, edit, and organize your site's page structure." icon="file-text" />}</Route>
+      <Route path="/app/pages/:pageId" component={PageEditorPage} />
+      <Route path="/app/pages" component={CmsPagesPage} />
       <Route path="/app/collections">{() => <StubPage title="Collections" description="Structured content collections. Define schemas, manage entries, and build dynamic content." icon="file-stack" />}</Route>
       <Route path="/app/blog">{() => <StubPage title="Blog" description="Create and manage blog posts. Write, schedule, and publish content with rich editing." icon="pen-tool" />}</Route>
       <Route path="/app/media">{() => <StubPage title="Media" description="Upload, organize, and manage your media assets. Images, videos, documents, and more." icon="image" />}</Route>

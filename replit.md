@@ -4,7 +4,7 @@
 
 ORIGIN is a modern website platform that replaces WordPress. It provides a modular architecture, visual page builder, and enterprise-grade infrastructure for building, managing, and scaling websites.
 
-**Current State**: MVP with authentication (BetterAuth), multi-tenant workspaces, role-based access control, marketing site, app dashboard, module browser, docs library, marketplace framework, Help & Resources, component registry, and modular server architecture.
+**Current State**: MVP with authentication (BetterAuth), multi-tenant workspaces, role-based access control, marketing site, app dashboard, module browser, docs library, marketplace framework, Help & Resources, component registry, CMS pages with revision history and publishing, and modular server architecture.
 
 ## Tech Stack
 
@@ -26,7 +26,7 @@ client/src/
   components/
     ui/                # shadcn/ui base components
     app-sidebar.tsx    # Dashboard sidebar navigation
-    origin-logo.tsx    # Brand logo component
+    origin-logo.tsx    # Brand logo component (uses attached logo image)
     theme-provider.tsx # Dark/light mode context
     theme-toggle.tsx   # Theme toggle button
   pages/
@@ -43,6 +43,8 @@ client/src/
     analytics.tsx      # Analytics (/app/analytics)
     settings.tsx       # Settings (/app/settings)
     users-admin.tsx    # User admin (/app/users)
+    cms-pages.tsx      # Pages list (/app/pages) — search, filter, create
+    page-editor.tsx    # Page editor (/app/pages/:pageId) — edit, save, publish, revisions
     not-found.tsx      # 404 page
 
 server/
@@ -65,6 +67,7 @@ server/
     billing/           # Stripe billing module (checkout, portal, webhooks)
     marketplace/       # Marketplace module (items, installs, preview sessions)
     component-registry/ # Component registry module (page builder components)
+    cmsPages/          # CMS pages module (pages, revisions, publishing)
 
 shared/
   schema.ts            # Drizzle schema + Zod types for all entities
@@ -84,6 +87,7 @@ docs/
   RESOURCE_DOCS_SYSTEM.md    # Help & Resources filtered docs system
   MARKETPLACE_FRAMEWORK.md   # Marketplace framework architecture
   COMPONENT_REGISTRY.md      # Component registry architecture
+  PAGES_REVISIONS_PUBLISHING.md # CMS pages, revisions, and publishing
 ```
 
 ## Database Tables
@@ -104,11 +108,13 @@ docs/
 - `marketplace_items` — Marketplace catalog (site-kits, sections, widgets, apps, add-ons)
 - `marketplace_installs` — Per-workspace item installations
 - `preview_sessions` — Non-destructive preview session state
+- `pages` — CMS pages scoped by workspace + site
+- `page_revisions` — Revision history for pages (max 10 per page)
 
 ## Key Patterns
 
 ### Server Module Pattern
-Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<name>.service.ts`, `<name>.repo.ts`
+Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<name>.service.ts`
 
 ### Authentication Flow
 1. BetterAuth handles `/api/auth/*` routes (sign-up, sign-in, sign-out, get-session)
@@ -126,6 +132,8 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - `/` — Marketing landing page (public)
 - `/login` — Authentication page (login/register)
 - `/app` — Dashboard (requires auth)
+- `/app/pages` — Pages list
+- `/app/pages/:pageId` — Page editor
 - `/app/marketplace` — Marketplace browser
 - `/app/help` — Help & Resources (filtered by installs)
 - `/app/docs` — Docs Library (all docs, developer-facing)
@@ -137,8 +145,17 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - `/api/docs/*` — Documentation endpoints
 - `/api/marketplace/*` — Marketplace endpoints
 - `/api/billing/*` — Billing endpoints
+- `/api/cms/*` — CMS pages endpoints
 - `/api/component-registry` — Component registry endpoints
 - `/api/webhooks/stripe` — Stripe webhook endpoint
+
+### CMS Pages System
+- Pages scoped by workspace_id + site_id
+- Auto-revision on every save (draft or publish)
+- Max 10 revisions per page (oldest pruned)
+- Status: DRAFT | PUBLISHED
+- Rollback creates NEW revision from prior snapshot
+- Publishing is explicit, updates published_at
 
 ### Documentation System
 - **Docs Library** (`/app/docs`): All developer docs, accessible from Studio sidebar
@@ -160,14 +177,12 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - 10 initial components: Hero, Feature Grid, Testimonials, Pricing, FAQ, Gallery, CTA, Rich Text, Divider, Spacer
 - Served via `/api/component-registry` endpoints
 - Read-only UI at `/app/studio/components` in Platform Studio
-- Powers: builder palette (planned), section presets (planned), marketplace packs (planned), resource docs (active)
 
 ### App Shell Navigation
 - Dual-mode sidebar: Client Workspace view + Platform Studio view
 - Mode toggle in sidebar header (only visible to SUPER_ADMIN/AGENCY_ADMIN)
 - Topbar: workspace switcher, command palette stub (Cmd+K), theme toggle, user menu
 - CRM nav item locked (requires module installation)
-- See docs/APP_SHELL_NAV.md for full nav reference
 
 ### Roles
 - SUPER_ADMIN — Platform owner (Digital Alchemy)
@@ -181,7 +196,7 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - SUPER_ADMIN: `admin@digitalalchemy.dev` / `OriginAdmin2026!`
 - Demo workspace: "Digital Alchemy" (enterprise plan)
 - Demo site: "Demo Site" (published)
-- 20 doc entries (developer + help + marketplace + component registry docs)
+- 22 doc entries (developer + help + marketplace + component registry + pages docs)
 - 12 platform modules
 - 14 marketplace items (2 site kits, 4 sections, 3 widgets, 2 apps, 3 add-ons)
 - 10 registered page builder components
@@ -199,74 +214,29 @@ Every future prompt that modifies ORIGIN must verify:
 
 ## Recent Changes
 
+- 2026-02-12: CMS Pages with revision history and publishing
+  - Added pages and page_revisions DB tables
+  - Created cmsPages server module with full CRUD + revision management
+  - Revision pruning: keeps only 10 most recent per page
+  - Rollback creates new revision from prior snapshot (non-destructive)
+  - Built Pages list UI with search, status filter, create dialog
+  - Built Page editor with title/slug/content/SEO editing
+  - Editor includes save draft, publish, and revisions panel
+  - Added /api/user/sites endpoint for site listing
+  - Created PAGES_REVISIONS_PUBLISHING.md documentation
+  - Seeded 2 new doc entries (developer + help)
+  - Non-destructive: existing data preserved
+
 - 2026-02-12: Component Registry foundation
   - Created shared component registry at shared/component-registry.ts
-  - Defined RegistryComponent type with prop schema, presets, preview config, docs, devNotes
-  - Added 10 initial components: Hero, Feature Grid, Testimonials, Pricing, FAQ, Gallery, CTA, Rich Text, Divider, Spacer
-  - Created component-registry server module with GET /api/component-registry endpoints
-  - Built read-only Component Registry UI at /app/studio/components (Platform Studio)
-  - UI features: category tabs, search, component detail with Props/Presets, Usage Docs, Dev Notes tabs
+  - 10 initial components with prop schemas, presets, docs, devNotes
+  - Component registry API endpoints
+  - Read-only Component Registry UI in Platform Studio
   - Created COMPONENT_REGISTRY.md documentation
-  - Seeded 2 new doc entries (developer + help) for component registry
-  - Non-destructive: existing data preserved
 
-- 2026-02-12: Documentation systems + Marketplace framework
-  - Fixed webhook routing bug (double /webhooks prefix)
-  - Enhanced docs module: full CRUD, search, type/category filtering, role-gated admin routes
-  - Created marketplace module: items, installs, preview sessions
-  - Added marketplace_items, marketplace_installs, preview_sessions DB tables
-  - Built Help & Resources page filtered by installed marketplace items
-  - Built Marketplace browser with category tabs, item detail, install/uninstall, preview modal
-  - Seeded 14 marketplace items across all types
-  - Seeded 4 marketplace-specific help docs + 4 system doc entries
-  - Created DOCS_LIBRARY_SYSTEM.md, RESOURCE_DOCS_SYSTEM.md, MARKETPLACE_FRAMEWORK.md
-  - Non-destructive: existing data preserved
-
-- 2026-02-12: Stripe billing foundation
-  - Added stripe_customers, subscriptions, entitlements DB tables
-  - Created billing module: checkout sessions, customer portal, webhook handler
-  - Webhook signature verification with raw body handling
-  - Hybrid pricing: base plan + per-site quantity line items
-  - Entitlements auto-updated on webhook events (features + limits)
-  - Built billing page UI with plan cards, subscription status, manage button
-  - Added Billing nav item to client workspace sidebar
-  - Created BILLING_STRIPE.md docs and seeded billing doc entry
-  - Non-destructive: existing data preserved
-
-- 2026-02-12: App shell with dual-mode navigation
-  - Built dual-mode sidebar: Client Workspace view + Platform Studio view
-  - Added workspace switcher dropdown in topbar
-  - Added command palette trigger stub (Cmd+K)
-  - Added user menu dropdown with profile and sign-out
-  - Created stub pages for all nav items (Pages, Collections, Blog, Media, Forms, Menus, Marketplace, CRM, Help)
-  - Created Platform Studio stubs (Platform Dashboard, Clients, Sites, Site Kits, Sections, Widgets, Apps, Marketplace Catalog, Component Registry, System Status, Billing & Plans, Audit Logs)
-  - CRM nav item locked behind module installation
-  - Mode toggle visible only to SUPER_ADMIN/AGENCY_ADMIN
-  - Created APP_SHELL_NAV.md docs and seeded doc entry
-  - Non-destructive seed: adds missing docs without overwriting existing
-
-- 2026-02-12: BetterAuth integration + tenancy foundations
-  - Added BetterAuth with Drizzle adapter for email/password auth
-  - Created tenancy model: workspaces, memberships, sites, audit_log tables
-  - Implemented auth middleware: requireAuth, requireRole, requireWorkspaceContext
-  - Built /login page with login/register toggle
-  - Added auth guard to app layout (redirects to /login)
-  - Added user menu with avatar and sign-out
-  - Updated marketing links to point to /login
-  - Seeded SUPER_ADMIN user, demo workspace, demo site
-  - Created AUTH_BETTERAUTH.md and TENANCY_AND_RBAC.md docs
-  - Added auth/tenancy doc entries to in-app Docs Library
-
-- 2026-02-12: Initial MVP foundation
-  - Created modular server architecture with health, docs, modules
-  - Built marketing landing page with hero, features, pricing
-  - Built app dashboard with sidebar navigation
-  - Added Docs Library with search and detail view
-  - Added Module browser with category tabs
-  - Added Analytics, Sites, Users, Settings pages
-  - Implemented dark/light mode theming
-  - Created docs governance framework
-  - Seeded database with docs and modules
+- 2026-02-12: Platform logo updated
+  - Updated OriginLogo component to use attached brand image
+  - Updated favicon.png
 
 ## User Preferences
 

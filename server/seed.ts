@@ -668,6 +668,87 @@ Each component comes with pre-configured presets you can apply with one click, t
     sortOrder: 15,
     isPublished: true,
   },
+  {
+    title: "Pages, Revisions & Publishing",
+    slug: "pages-revisions-publishing",
+    content: `ORIGIN Pages provides a CMS-style page management system scoped by workspace and site.
+
+## Key Concepts
+
+- **Pages** are scoped by workspace_id + site_id
+- Every save (draft or publish) creates a **revision**
+- Only the 10 most recent revisions are kept (pruning)
+- Page status: DRAFT | PUBLISHED
+- Rollback creates a new revision from a prior snapshot
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/cms/sites/:siteId/pages | List pages (query: search, status) |
+| POST | /api/cms/sites/:siteId/pages | Create page |
+| GET | /api/cms/pages/:pageId | Get page + latest revision |
+| PATCH | /api/cms/pages/:pageId | Update page (creates revision) |
+| POST | /api/cms/pages/:pageId/publish | Publish page |
+| POST | /api/cms/pages/:pageId/rollback/:revisionId | Rollback |
+| GET | /api/cms/pages/:pageId/revisions | List revisions |
+| DELETE | /api/cms/pages/:pageId | Delete page |
+
+## Architecture
+
+Module: server/modules/cmsPages/
+See /docs/PAGES_REVISIONS_PUBLISHING.md for complete reference.`,
+    category: "guides",
+    type: "developer",
+    tags: ["pages", "revisions", "publishing", "cms"],
+    sortOrder: 16,
+    isPublished: true,
+  },
+  {
+    title: "Managing Pages",
+    slug: "help-managing-pages",
+    content: `Learn how to create, edit, publish, and manage pages on your ORIGIN site.
+
+## Creating a Page
+
+1. Navigate to **Pages** in the sidebar
+2. Click **New Page**
+3. Enter a title and URL slug
+4. Click **Create Page**
+
+## Editing Pages
+
+Click any page in the list to open the editor. You can edit:
+- **Title** — The page name shown in navigation
+- **Slug** — The URL path (e.g. /about)
+- **Content** — The page content (JSON editor for now, visual builder coming soon)
+- **SEO** — Title and description for search engines
+
+## Saving & Publishing
+
+- **Save Draft** — Saves your changes without making them public. Creates a revision.
+- **Publish** — Makes the page live and visible to visitors. Also creates a revision.
+
+## Revision History
+
+Every time you save or publish, ORIGIN creates a snapshot of your page. You can view up to 10 recent versions in the **Revisions** panel.
+
+To restore an older version:
+1. Click **Revisions** in the editor toolbar
+2. Find the version you want
+3. Click **Restore**
+
+This creates a new version from the old content — your history is never lost.
+
+## Deleting Pages
+
+Pages can be deleted from the page list. This permanently removes the page and all its revisions.`,
+    category: "help",
+    type: "help",
+    tags: ["pages", "editor", "publishing", "revisions"],
+    sortOrder: 16,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [

@@ -82,5 +82,14 @@ export function createAuthRoutes(): Router {
     res.json(userWorkspaces);
   });
 
+  router.get("/sites", requireAuth(), async (req, res) => {
+    const workspaceId = req.headers["x-workspace-id"] as string || req.session?.activeWorkspaceId;
+    if (!workspaceId) {
+      return res.json([]);
+    }
+    const sitesList = await storage.getSitesByWorkspace(workspaceId);
+    res.json(sitesList);
+  });
+
   return router;
 }
