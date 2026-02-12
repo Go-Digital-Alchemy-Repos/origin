@@ -1909,6 +1909,51 @@ All routes are mounted under /api/site-kits.
     sortOrder: 25,
     isPublished: true,
   },
+  {
+    title: "AI Copilot & Context System",
+    slug: "ai-copilot-context",
+    content: `The AI Copilot Context System enriches AI interactions with workspace-specific data. It gathers entitlements, installed apps, site pages, collections, and menus to build rich context that is injected into prompt templates.
+
+## Key Features
+
+- **Context Builder**: Automatically gathers workspace entitlements, installed marketplace apps, sites, pages, collections, and navigation menus
+- **Prompt Templates**: Pre-built templates for General Assistant, Content Strategy, Lead Capture & CRM, and Site Optimization
+- **Smart Suggestions**: Rule-based recommendations without requiring an API key (e.g., CRM enabled → suggest lead capture flows)
+- **Context Preview**: Preview the assembled prompt before sending to the LLM
+
+## API Endpoints
+
+- GET /api/ai-copilot/templates — List available prompt templates
+- GET /api/ai-copilot/context — Get raw workspace context
+- POST /api/ai-copilot/context/preview — Preview assembled prompt with context
+- POST /api/ai-copilot/chat — Send message to LLM with workspace context
+- POST /api/ai-copilot/suggest — Get rule-based suggestions (no LLM)
+
+## How Context Injection Works
+
+When a user sends a message, the system:
+1. Gathers workspace data (entitlements, installs, sites, pages, collections, menus)
+2. Derives capabilities from features and installed apps
+3. Selects the prompt template (e.g., lead-capture)
+4. Injects formatted context into the system prompt
+5. Sends the enriched prompt + user message to the LLM
+
+## Configuration
+
+The /chat endpoint requires OPENAI_API_KEY. All other endpoints work without it, providing value through context inspection and rule-based suggestions.
+
+## File Structure
+
+- server/modules/aiCopilot/index.ts — Module entry
+- server/modules/aiCopilot/context-builder.ts — Workspace data gathering
+- server/modules/aiCopilot/prompt-templates.ts — Template definitions and context formatters
+- server/modules/aiCopilot/aiCopilot.routes.ts — API route handlers`,
+    category: "guides",
+    type: "developer",
+    tags: ["ai", "copilot", "context", "openai", "suggestions"],
+    sortOrder: 26,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [

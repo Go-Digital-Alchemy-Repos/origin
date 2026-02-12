@@ -18,6 +18,7 @@ import { publicSitePreviewRoutes } from "./publicSite";
 import { createSiteKitsModule } from "./siteKits";
 import { createCrmModule } from "./apps/crm";
 import { createMigrationModule } from "./migration";
+import { createAiCopilotModule } from "./aiCopilot";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -41,6 +42,7 @@ export function registerAllModules(): Router {
   api.use(createSiteKitsModule());
   api.use(createCrmModule());
   api.use(createMigrationModule());
+  api.use(createAiCopilotModule());
 
   return api;
 }
