@@ -39,6 +39,7 @@ The frontend utilizes React 18 with Tailwind CSS and shadcn/ui for a modern, com
 -   **Workspaces & Roles:** Supports multi-tenant workspaces with `SUPER_ADMIN`, `AGENCY_ADMIN`, `CLIENT_ADMIN`, `CLIENT_EDITOR`, and `CLIENT_VIEWER` roles.
 -   **Marketplace:** Provides various item types (site-kits, sections, widgets, apps, add-ons), allowing for free or paid installations, non-destructive previews, and per-workspace management.
 -   **Site Theme System:** Semantic tokens (surface/text/border/accent for light+dark modes) and layout presets (header style, footer style, section spacing, container width, button style) stored per site. Theme editor UI at `/app/sites/theme` with color pickers, layout selectors, and live preview panel. API: GET/PUT `/api/cms/sites/:siteId/theme`.
+-   **Page Builder:** Puck-based (`@puckeditor/core`) visual drag-and-drop page builder. Maps Global Component Registry to Puck config. Edits `page_revisions.content_json` with versioned `BuilderContent` envelope. Supports add/remove/reorder blocks, prop inspector, responsive preview (desktop/tablet/mobile). Modular architecture for engine swapability.
 
 ## Key Routes
 
@@ -74,6 +75,18 @@ Located at `server/modules/`:
 -   `modules/` — Platform modules
 
 ## Recent Changes
+
+- 2026-02-12: Puck page builder integration
+  - Installed @puckeditor/core as visual drag-and-drop builder engine
+  - Created builder adapter: client/src/lib/builder/puck-adapter.ts (registry → Puck config)
+  - Created React component implementations: client/src/lib/builder/components.tsx (10 components)
+  - Created builder types with schemaVersion envelope: client/src/lib/builder/types.ts
+  - Created shared renderer: client/src/lib/builder/renderer.tsx (content_json → React)
+  - Created PuckEditor wrapper: client/src/components/builder/PuckEditor.tsx
+  - Updated page-editor.tsx with "Open Builder" button, Details/Content JSON tabs
+  - Added responsive preview (desktop/tablet/mobile) and full preview mode
+  - Created BUILDER_PUCK_INTEGRATION.md documentation
+  - Seeded 2 doc entries (developer + help)
 
 - 2026-02-12: Site theme system
   - Added site_themes DB table with tokens_json + layout_json

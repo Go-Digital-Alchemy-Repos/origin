@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useRoute } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sheet,
   SheetContent,
@@ -26,9 +26,14 @@ import {
   History,
   RotateCcw,
   Clock,
-  User,
+  Blocks,
   FileText,
+  Code2,
 } from "lucide-react";
+import type { BuilderContent } from "@/lib/builder/types";
+import { isBuilderContent } from "@/lib/builder/types";
+
+const PuckEditorWrapper = lazy(() => import("@/components/builder/PuckEditor"));
 
 type PageWithRevision = Page & { latestRevision?: PageRevision };
 
@@ -45,6 +50,8 @@ export default function PageEditorPage() {
   const [seoDescription, setSeoDescription] = useState("");
   const [dirty, setDirty] = useState(false);
   const [revisionsOpen, setRevisionsOpen] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
 
   const { data: pageData, isLoading } = useQuery<PageWithRevision>({
     queryKey: ["/api/cms/pages", pageId],
@@ -70,12 +77,16 @@ export default function PageEditorPage() {
   }, [pageData]);
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (overrideContent?: unknown) => {
       let parsed: unknown = {};
-      try {
-        parsed = JSON.parse(contentJson);
-      } catch {
-        parsed = {};
+      if (overrideContent !== undefined) {
+        parsed = overrideContent;
+      } else {
+        try {
+          parsed = JSON.parse(contentJson);
+        } catch {
+          parsed = {};
+        }
       }
       const res = await apiRequest("PATCH", `/api/cms/pages/${pageId}`, {
         title,
@@ -100,12 +111,16 @@ export default function PageEditorPage() {
   });
 
   const publishMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (overrideContent?: unknown) => {
       let parsed: unknown = {};
-      try {
-        parsed = JSON.parse(contentJson);
-      } catch {
-        parsed = {};
+      if (overrideContent !== undefined) {
+        parsed = overrideContent;
+      } else {
+        try {
+          parsed = JSON.parse(contentJson);
+        } catch {
+          parsed = {};
+        }
       }
       const res = await apiRequest("POST", `/api/cms/pages/${pageId}/publish`, { contentJson: parsed });
       return res.json();
@@ -138,6 +153,16 @@ export default function PageEditorPage() {
     },
   });
 
+  const handleBuilderSave = (content: BuilderContent) => {
+    saveMutation.mutate(content);
+    setContentJson(JSON.stringify(content, null, 2));
+  };
+
+  const handleBuilderPublish = (content: BuilderContent) => {
+    publishMutation.mutate(content);
+    setContentJson(JSON.stringify(content, null, 2));
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -163,10 +188,43 @@ export default function PageEditorPage() {
     setDirty(true);
   };
 
+  const currentContentParsed = (() => {
+    try {
+      return JSON.parse(contentJson);
+    } catch {
+      return {};
+    }
+  })();
+
+  const hasBuilderContent = isBuilderContent(currentContentParsed);
+
+  if (builderOpen) {
+    return (
+      <Suspense fallback={
+        <div className="fixed inset-0 z-50 bg-background flex items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      }>
+        <PuckEditorWrapper
+          initialContent={currentContentParsed}
+          onSave={handleBuilderSave}
+          onPublish={handleBuilderPublish}
+          onClose={() => {
+            setBuilderOpen(false);
+            queryClient.invalidateQueries({ queryKey: ["/api/cms/pages", pageId] });
+          }}
+          pageTitle={pageData.title}
+          isSaving={saveMutation.isPending}
+          isPublishing={publishMutation.isPending}
+        />
+      </Suspense>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b bg-background px-4 py-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <Button
             variant="ghost"
             size="icon"
@@ -191,7 +249,16 @@ export default function PageEditorPage() {
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setBuilderOpen(true)}
+            data-testid="button-open-builder"
+          >
+            <Blocks className="mr-1.5 h-4 w-4" />
+            Open Builder
+          </Button>
           <Sheet open={revisionsOpen} onOpenChange={setRevisionsOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" data-testid="button-revisions">
@@ -215,7 +282,7 @@ export default function PageEditorPage() {
                       <CardContent className="py-3 px-4">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-medium">v{rev.version}</span>
                               {idx === 0 && (
                                 <Badge variant="secondary" className="text-[10px]">
@@ -256,7 +323,7 @@ export default function PageEditorPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => saveMutation.mutate()}
+            onClick={() => saveMutation.mutate(undefined)}
             disabled={saveMutation.isPending}
             data-testid="button-save-draft"
           >
@@ -265,7 +332,7 @@ export default function PageEditorPage() {
           </Button>
           <Button
             size="sm"
-            onClick={() => publishMutation.mutate()}
+            onClick={() => publishMutation.mutate(undefined)}
             disabled={publishMutation.isPending}
             data-testid="button-publish"
           >
@@ -277,74 +344,110 @@ export default function PageEditorPage() {
 
       <div className="flex-1 overflow-auto p-6">
         <div className="mx-auto max-w-3xl space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Page Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-title">Title</Label>
-                <Input
-                  id="edit-title"
-                  value={title}
-                  onChange={(e) => handleFieldChange(setTitle)(e.target.value)}
-                  data-testid="input-edit-title"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-slug">Slug</Label>
-                <Input
-                  id="edit-slug"
-                  value={slug}
-                  onChange={(e) => handleFieldChange(setSlug)(e.target.value)}
-                  data-testid="input-edit-slug"
-                />
-              </div>
-            </CardContent>
-          </Card>
+          <Tabs value={activeTab} onValueChange={setActiveTab} data-testid="tabs-page-editor">
+            <TabsList>
+              <TabsTrigger value="details" data-testid="tab-details">
+                <FileText className="h-4 w-4 mr-1" />
+                Details
+              </TabsTrigger>
+              <TabsTrigger value="content" data-testid="tab-content">
+                <Code2 className="h-4 w-4 mr-1" />
+                Content JSON
+              </TabsTrigger>
+            </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Content (JSON)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={contentJson}
-                onChange={(e) => handleFieldChange(setContentJson)(e.target.value)}
-                className="min-h-[200px] font-mono text-sm"
-                data-testid="textarea-content-json"
-              />
-            </CardContent>
-          </Card>
+            <TabsContent value="details" className="space-y-6 mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Page Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-title">Title</Label>
+                    <Input
+                      id="edit-title"
+                      value={title}
+                      onChange={(e) => handleFieldChange(setTitle)(e.target.value)}
+                      data-testid="input-edit-title"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="edit-slug">Slug</Label>
+                    <Input
+                      id="edit-slug"
+                      value={slug}
+                      onChange={(e) => handleFieldChange(setSlug)(e.target.value)}
+                      data-testid="input-edit-slug"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">SEO</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="seo-title">SEO Title</Label>
-                <Input
-                  id="seo-title"
-                  value={seoTitle}
-                  onChange={(e) => handleFieldChange(setSeoTitle)(e.target.value)}
-                  placeholder="Page title for search engines"
-                  data-testid="input-seo-title"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="seo-description">SEO Description</Label>
-                <Textarea
-                  id="seo-description"
-                  value={seoDescription}
-                  onChange={(e) => handleFieldChange(setSeoDescription)(e.target.value)}
-                  placeholder="Brief page description for search results"
-                  className="min-h-[80px]"
-                  data-testid="input-seo-description"
-                />
-              </div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">SEO</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="seo-title">SEO Title</Label>
+                    <Input
+                      id="seo-title"
+                      value={seoTitle}
+                      onChange={(e) => handleFieldChange(setSeoTitle)(e.target.value)}
+                      placeholder="Page title for search engines"
+                      data-testid="input-seo-title"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="seo-description">SEO Description</Label>
+                    <Textarea
+                      id="seo-description"
+                      value={seoDescription}
+                      onChange={(e) => handleFieldChange(setSeoDescription)(e.target.value)}
+                      placeholder="Brief page description for search results"
+                      className="min-h-[80px]"
+                      data-testid="input-seo-description"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {hasBuilderContent && (
+                <Card>
+                  <CardContent className="py-4 px-5">
+                    <div className="flex items-center gap-3">
+                      <Blocks className="h-5 w-5 text-primary" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">Visual Builder Content</div>
+                        <div className="text-xs text-muted-foreground">
+                          {(currentContentParsed as BuilderContent).data?.content?.length || 0} blocks
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => setBuilderOpen(true)} data-testid="button-edit-in-builder">
+                        Edit in Builder
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="content" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Content (JSON)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    value={contentJson}
+                    onChange={(e) => handleFieldChange(setContentJson)(e.target.value)}
+                    className="min-h-[300px] font-mono text-sm"
+                    data-testid="textarea-content-json"
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

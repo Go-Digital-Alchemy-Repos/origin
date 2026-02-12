@@ -721,7 +721,7 @@ See /docs/PAGES_REVISIONS_PUBLISHING.md for complete reference.`,
 Click any page in the list to open the editor. You can edit:
 - **Title** — The page name shown in navigation
 - **Slug** — The URL path (e.g. /about)
-- **Content** — The page content (JSON editor for now, visual builder coming soon)
+- **Content** — Use the visual drag-and-drop builder or the JSON editor
 - **SEO** — Title and description for search engines
 
 ## Saving & Publishing
@@ -747,6 +747,97 @@ Pages can be deleted from the page list. This permanently removes the page and a
     type: "help",
     tags: ["pages", "editor", "publishing", "revisions"],
     sortOrder: 16,
+    isPublished: true,
+  },
+  {
+    title: "Page Builder — Puck Integration",
+    slug: "builder-puck-integration",
+    content: `ORIGIN uses Puck (@puckeditor/core) as its visual drag-and-drop page builder engine.
+
+## Architecture
+
+The builder integration is modular — all Puck-specific code is isolated so the engine can be swapped later.
+
+- **Adapter**: client/src/lib/builder/puck-adapter.ts maps the Global Component Registry to Puck config
+- **Components**: client/src/lib/builder/components.tsx provides React implementations for all registry components
+- **Types**: client/src/lib/builder/types.ts defines the BuilderContent schema with versioning
+- **Renderer**: client/src/lib/builder/renderer.tsx converts content_json to React output
+- **Editor**: client/src/components/builder/PuckEditor.tsx wraps Puck with responsive preview
+
+## Content Format
+
+Builder output is stored in page_revisions.content_json as:
+
+\`\`\`json
+{
+  "schemaVersion": 1,
+  "data": {
+    "content": [{ "type": "hero", "props": { "id": "...", "headline": "..." } }],
+    "root": {}
+  }
+}
+\`\`\`
+
+## Guardrails
+
+- No raw CSS — components only accept semantic props (enums, theme tokens)
+- Schema validation checks version compatibility
+- Registry validation verifies component types exist
+- All styling controls use predefined safe options
+
+See /docs/BUILDER_PUCK_INTEGRATION.md for complete reference.`,
+    category: "architecture",
+    type: "developer",
+    tags: ["builder", "puck", "pages", "drag-drop", "components"],
+    sortOrder: 17,
+    isPublished: true,
+  },
+  {
+    title: "How to Use the Page Builder",
+    slug: "help-page-builder",
+    content: `ORIGIN includes a visual drag-and-drop page builder to create pages without writing code.
+
+## Getting Started
+
+1. Navigate to **Pages** in the sidebar
+2. Click a page to open the editor
+3. Click **Open Builder** in the toolbar
+4. The full-screen builder opens with components on the left
+
+## Adding Content Blocks
+
+Drag components from the left panel onto the canvas. Available components include:
+
+- **Hero** — Eye-catching banner with headlines and buttons
+- **Feature Grid** — Showcase features in a grid layout
+- **Testimonials** — Customer reviews and quotes
+- **Pricing** — Plan comparison tables
+- **FAQ** — Expandable question-and-answer sections
+- **Gallery** — Image galleries
+- **CTA** — Call-to-action banners
+- **Rich Text** — Free-form text content
+- **Divider** — Visual separators
+- **Spacer** — Invisible spacing
+
+## Editing Blocks
+
+Click any block on the canvas to select it. The right panel shows all its customizable options. Each option uses safe controls — dropdowns, text fields, and toggles — so you can't accidentally break the design.
+
+## Responsive Preview
+
+Use the Desktop, Tablet, and Mobile buttons to preview your page at different screen sizes. Click **Preview** for a clean view without the editor interface.
+
+## Saving Your Work
+
+- **Save Draft** — Saves without publishing (creates a revision)
+- **Publish** — Makes the page live
+- Close the builder with the X button to return to page settings
+
+All changes are saved as revisions. You can restore any previous version from the Revisions panel.`,
+    category: "help",
+    type: "help",
+    tags: ["builder", "pages", "drag-drop", "editing", "visual"],
+    sortOrder: 17,
     isPublished: true,
   },
   {
