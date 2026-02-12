@@ -7,6 +7,7 @@ import { createBillingModule } from "./billing";
 import { createMarketplaceModule } from "./marketplace";
 import { createComponentRegistryModule } from "./component-registry";
 import { createCmsPagesModule } from "./cmsPages";
+import { createCmsCollectionsModule } from "./cmsCollections";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -19,6 +20,7 @@ export function registerAllModules(): Router {
   api.use(createMarketplaceModule());
   api.use(createComponentRegistryModule());
   api.use(createCmsPagesModule());
+  api.use(createCmsCollectionsModule());
 
   return api;
 }

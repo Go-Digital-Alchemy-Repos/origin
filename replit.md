@@ -4,7 +4,7 @@
 
 ORIGIN is a modern website platform that replaces WordPress. It provides a modular architecture, visual page builder, and enterprise-grade infrastructure for building, managing, and scaling websites.
 
-**Current State**: MVP with authentication (BetterAuth), multi-tenant workspaces, role-based access control, marketing site, app dashboard, module browser, docs library, marketplace framework, Help & Resources, component registry, CMS pages with revision history and publishing, and modular server architecture.
+**Current State**: MVP with authentication (BetterAuth), multi-tenant workspaces, role-based access control, marketing site, app dashboard, module browser, docs library, marketplace framework, Help & Resources, component registry, CMS pages with revision history and publishing, Collections system for custom content types with revisioned items, and modular server architecture.
 
 ## Tech Stack
 
@@ -45,6 +45,9 @@ client/src/
     users-admin.tsx    # User admin (/app/users)
     cms-pages.tsx      # Pages list (/app/pages) — search, filter, create
     page-editor.tsx    # Page editor (/app/pages/:pageId) — edit, save, publish, revisions
+    collections.tsx    # Collections list (/app/collections) — search, create
+    collection-detail.tsx # Collection detail (/app/collections/:id) — schema builder, items list
+    collection-item-editor.tsx # Item editor (/app/collections/:id/items/:itemId) — auto-form, revisions
     not-found.tsx      # 404 page
 
 server/
@@ -68,6 +71,7 @@ server/
     marketplace/       # Marketplace module (items, installs, preview sessions)
     component-registry/ # Component registry module (page builder components)
     cmsPages/          # CMS pages module (pages, revisions, publishing)
+    cmsCollections/    # Collections module (custom content types, items, revisions)
 
 shared/
   schema.ts            # Drizzle schema + Zod types for all entities
@@ -88,6 +92,7 @@ docs/
   MARKETPLACE_FRAMEWORK.md   # Marketplace framework architecture
   COMPONENT_REGISTRY.md      # Component registry architecture
   PAGES_REVISIONS_PUBLISHING.md # CMS pages, revisions, and publishing
+  COLLECTIONS_SYSTEM.md        # Collections system architecture
 ```
 
 ## Database Tables
@@ -110,6 +115,9 @@ docs/
 - `preview_sessions` — Non-destructive preview session state
 - `pages` — CMS pages scoped by workspace + site
 - `page_revisions` — Revision history for pages (max 10 per page)
+- `collections` — Custom content type definitions scoped by workspace + site
+- `collection_items` — Items within collections (DRAFT/PUBLISHED)
+- `collection_item_revisions` — Revision history for items (max 10 per item)
 
 ## Key Patterns
 
@@ -145,7 +153,10 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - `/api/docs/*` — Documentation endpoints
 - `/api/marketplace/*` — Marketplace endpoints
 - `/api/billing/*` — Billing endpoints
-- `/api/cms/*` — CMS pages endpoints
+- `/app/collections` — Collections list
+- `/app/collections/:id` — Collection detail (schema + items)
+- `/app/collections/:id/items/:itemId` — Item editor
+- `/api/cms/*` — CMS pages + collections endpoints
 - `/api/component-registry` — Component registry endpoints
 - `/api/webhooks/stripe` — Stripe webhook endpoint
 
@@ -156,6 +167,16 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - Status: DRAFT | PUBLISHED
 - Rollback creates NEW revision from prior snapshot
 - Publishing is explicit, updates published_at
+
+### Collections System
+- Collections scoped by workspace_id + site_id
+- Schema stored as JSON array of CollectionField objects
+- 9 field types: text, richtext, number, boolean, date, image, select, multiselect, url
+- Items belong to a collection, store data matching the schema
+- Auto-revision on every save (max 10, oldest pruned)
+- Status: DRAFT | PUBLISHED
+- Rollback creates NEW revision from prior snapshot (non-destructive)
+- Auto-generated form in item editor based on schema fields
 
 ### Documentation System
 - **Docs Library** (`/app/docs`): All developer docs, accessible from Studio sidebar
@@ -196,7 +217,7 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - SUPER_ADMIN: `admin@digitalalchemy.dev` / `OriginAdmin2026!`
 - Demo workspace: "Digital Alchemy" (enterprise plan)
 - Demo site: "Demo Site" (published)
-- 22 doc entries (developer + help + marketplace + component registry + pages docs)
+- 24 doc entries (developer + help + marketplace + component registry + pages + collections docs)
 - 12 platform modules
 - 14 marketplace items (2 site kits, 4 sections, 3 widgets, 2 apps, 3 add-ons)
 - 10 registered page builder components
@@ -213,6 +234,21 @@ Every future prompt that modifies ORIGIN must verify:
 7. Update replit.md with recent changes
 
 ## Recent Changes
+
+- 2026-02-12: Collections system for custom content types
+  - Added collections, collection_items, collection_item_revisions DB tables
+  - Created cmsCollections server module with full CRUD + revision management
+  - 9 field types: text, richtext, number, boolean, date, image, select, multiselect, url
+  - Schema stored as JSON array of CollectionField objects with zod validation
+  - Auto-revision on every save (max 10, oldest pruned)
+  - Rollback creates new revision from prior snapshot (non-destructive)
+  - Built Collections list UI with search and create dialog
+  - Built Collection detail with tabs (Items list + Schema builder)
+  - Built Item editor with auto-generated form based on schema fields
+  - Item editor includes save draft, publish, delete, and revisions panel
+  - Created COLLECTIONS_SYSTEM.md documentation
+  - Seeded 2 new doc entries (developer + help)
+  - Non-destructive: existing data preserved
 
 - 2026-02-12: CMS Pages with revision history and publishing
   - Added pages and page_revisions DB tables

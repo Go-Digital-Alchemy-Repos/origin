@@ -749,6 +749,100 @@ Pages can be deleted from the page list. This permanently removes the page and a
     sortOrder: 16,
     isPublished: true,
   },
+  {
+    title: "Collections System",
+    slug: "collections-system",
+    content: `ORIGIN Collections lets you define custom content types with flexible schemas and revisioned items.
+
+## Key Concepts
+
+- **Collections** are scoped by workspace_id + site_id
+- Each collection has a **schema** (array of typed fields stored as JSON)
+- 9 field types: text, richtext, number, boolean, date, image, select, multiselect, url
+- **Items** belong to a collection and store data matching the schema
+- Every save creates a **revision** (max 10, oldest pruned)
+- Item status: DRAFT | PUBLISHED
+- Rollback creates a new revision from a prior snapshot
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/cms/sites/:siteId/collections | List collections |
+| POST | /api/cms/sites/:siteId/collections | Create collection |
+| GET | /api/cms/collections/:id | Get collection |
+| PATCH | /api/cms/collections/:id | Update collection (name, slug, schema) |
+| DELETE | /api/cms/collections/:id | Delete collection + all items |
+| GET | /api/cms/collections/:id/items | List items |
+| POST | /api/cms/collections/:id/items | Create item |
+| GET | /api/cms/collections/:id/items/:itemId | Get item + latest revision |
+| PATCH | /api/cms/collections/:id/items/:itemId | Update item (creates revision) |
+| POST | /api/cms/collections/:id/items/:itemId/publish | Publish item |
+| POST | /api/cms/collections/:id/items/:itemId/rollback/:revId | Rollback |
+| GET | /api/cms/collections/:id/items/:itemId/revisions | List revisions |
+| DELETE | /api/cms/collections/:id/items/:itemId | Delete item |
+
+## Architecture
+
+Module: server/modules/cmsCollections/
+See /docs/COLLECTIONS_SYSTEM.md for complete reference.`,
+    category: "guides",
+    type: "developer",
+    tags: ["collections", "content-types", "schema", "revisions", "cms"],
+    sortOrder: 17,
+    isPublished: true,
+  },
+  {
+    title: "Managing Collections",
+    slug: "help-managing-collections",
+    content: `Learn how to create custom content types and manage structured content with ORIGIN Collections.
+
+## What Are Collections?
+
+Collections let you define your own content types beyond pages. For example, you could create collections for Team Members, Products, Testimonials, or FAQ entries — each with their own set of fields.
+
+## Creating a Collection
+
+1. Navigate to **Collections** in the sidebar
+2. Click **New Collection**
+3. Enter a name, URL slug, and optional description
+4. Click **Create Collection**
+
+## Defining the Schema
+
+After creating a collection, switch to the **Schema** tab to define fields:
+
+1. Click **Add Field**
+2. Choose a label, key (auto-generated), and field type
+3. Set whether the field is required
+4. For Select/Multi-Select types, enter comma-separated options
+5. Click **Save Schema** to persist changes
+
+Available field types: Text, Rich Text, Number, Boolean, Date, Image URL, Select, Multi-Select, URL.
+
+## Adding Items
+
+Switch to the **Items** tab and click **New Item**. The editor auto-generates a form based on your schema fields.
+
+## Saving & Publishing Items
+
+- **Save Draft** — Saves changes without making them public. Creates a revision.
+- **Publish** — Makes the item live. Also creates a revision.
+
+## Revision History
+
+Every save creates a snapshot. View up to 10 recent versions in the **Revisions** panel. To restore an older version, click **Restore** — this creates a new version from the old data.
+
+## Deleting
+
+- Delete individual items from the item editor
+- Delete entire collections (and all items) from the collection detail page`,
+    category: "help",
+    type: "help",
+    tags: ["collections", "content-types", "schema", "items"],
+    sortOrder: 17,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [
