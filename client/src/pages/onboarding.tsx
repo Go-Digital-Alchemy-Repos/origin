@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -427,23 +428,49 @@ function SiteKitStep({
   onNext: () => void;
   onSkip: () => void;
 }) {
+  const { toast } = useToast();
   const { data: kits, isLoading } = useQuery<any[]>({
     queryKey: ["/api/marketplace/items"],
   });
 
-  const siteKits = (kits || []).filter((k: any) => k.type === "site-kit" && k.status === "published");
+  const siteKits = (kits || []).filter((k: any) => {
+    if (k.type !== "site-kit" || k.status !== "published") return false;
+    const meta = k.metadata as Record<string, unknown> | null;
+    return meta?.is_onboarding_eligible === true;
+  });
 
   const installMutation = useMutation({
     mutationFn: async (kitId: string) => {
-      await apiRequest("POST", `/api/marketplace/install/${kitId}`);
+      await apiRequest("POST", `/api/marketplace/install`, { itemId: kitId });
       if (siteId) {
-        await apiRequest("POST", `/api/site-kits/install`, { siteId, siteKitId: kitId });
+        const kit = (kits || []).find((k: any) => k.id === kitId);
+        const meta = kit?.metadata as Record<string, unknown> | null;
+        const siteKitId = meta?.siteKitId as string | undefined;
+        if (siteKitId) {
+          await apiRequest("POST", `/api/site-kits/${siteKitId}/install`, { siteId });
+        }
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/marketplace/installs"] });
+      toast({ title: "Site Kit installed", description: "Your pages, menus, and forms have been created." });
       onNext();
     },
+    onError: () => {
+      toast({ title: "Install failed", description: "Something went wrong. You can try again or skip.", variant: "destructive" });
+    },
   });
+
+  const getBadge = (kit: any) => {
+    const meta = kit.metadata as Record<string, unknown> | null;
+    const badge = (meta?.display_badge as string) || (kit.isFree ? "Free" : "Premium");
+    return badge;
+  };
+
+  const getIndustryTag = (kit: any) => {
+    const tags = (kit.tags || []) as string[];
+    return tags.find((t: string) => !["site-kit", "starter"].includes(t));
+  };
 
   return (
     <Card>
@@ -456,9 +483,9 @@ function SiteKitStep({
         </p>
 
         {isLoading ? (
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {[1, 2].map((i) => (
-              <Skeleton key={i} className="h-28 rounded-lg" />
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-36 rounded-lg" />
             ))}
           </div>
         ) : siteKits.length === 0 ? (
@@ -466,30 +493,47 @@ function SiteKitStep({
             <p className="text-sm text-muted-foreground">No site kits available yet. You can skip this step.</p>
           </div>
         ) : (
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
             {siteKits.map((kit: any) => (
               <Card
                 key={kit.id}
                 className="hover-elevate cursor-pointer"
-                onClick={() => installMutation.mutate(kit.id)}
+                onClick={() => !installMutation.isPending && installMutation.mutate(kit.id)}
                 data-testid={`card-sitekit-${kit.slug}`}
               >
-                <CardContent className="flex items-start gap-3 p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Palette className="h-5 w-5 text-primary" />
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <Palette className="h-4 w-4 text-primary" />
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {getBadge(kit)}
+                    </Badge>
                   </div>
-                  <div>
+                  <div className="mt-3">
                     <div className="font-medium text-sm">{kit.name}</div>
-                    <div className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{kit.description}</div>
+                    <div className="mt-1 text-xs text-muted-foreground line-clamp-2">{kit.description}</div>
                   </div>
+                  {getIndustryTag(kit) && (
+                    <div className="mt-2">
+                      <span className="text-xs text-muted-foreground/70 capitalize">{getIndustryTag(kit)?.replace(/-/g, " ")}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
 
+        {installMutation.isPending && (
+          <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Installing kit...
+          </div>
+        )}
+
         <div className="mt-6 flex items-center justify-end">
-          <Button variant="ghost" onClick={onSkip} data-testid="button-skip-sitekit">
+          <Button variant="ghost" onClick={onSkip} disabled={installMutation.isPending} data-testid="button-skip-sitekit">
             Skip for now
             <ArrowRight className="ml-1.5 h-4 w-4" />
           </Button>

@@ -1,7 +1,10 @@
+import { db } from "../../db";
 import { siteKitsRepo } from "./siteKits.repo";
 import { marketplaceRepo } from "../marketplace/marketplace.repo";
 import { NotFoundError, ValidationError, ConflictError } from "../shared/errors";
 import type { InsertSiteKit, InsertSiteKitAsset } from "@shared/schema";
+import { pages, pageRevisions, menus, menuItems, forms, siteSeoSettings } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 class SiteKitsService {
   async getAll() {
@@ -152,33 +155,151 @@ class SiteKitsService {
 
     const results = {
       pagesCreated: 0,
-      sectionsApplied: 0,
-      collectionsCreated: 0,
+      pagesSkipped: 0,
+      menusCreated: 0,
+      formsCreated: 0,
       themeApplied: false,
-      starterContentCreated: 0,
+      seoApplied: false,
+      sectionsApplied: 0,
+      slugConflicts: [] as string[],
     };
+
+    const existingPages = await db
+      .select({ slug: pages.slug })
+      .from(pages)
+      .where(and(eq(pages.workspaceId, workspaceId), eq(pages.siteId, siteId)));
+    const existingSlugs = new Set(existingPages.map((p) => p.slug));
+
+    const pageAssets = manifest.assets["page_template"] || [];
+    for (const asset of pageAssets) {
+      const cfg = asset.configJson as Record<string, any>;
+      let slug = cfg.slug || "page";
+      const title = cfg.title || "Untitled Page";
+
+      if (existingSlugs.has(slug)) {
+        const suffixed = `${slug}-kit`;
+        if (existingSlugs.has(suffixed)) {
+          results.pagesSkipped++;
+          results.slugConflicts.push(slug);
+          continue;
+        }
+        slug = suffixed;
+        results.slugConflicts.push(cfg.slug);
+      }
+
+      const [page] = await db
+        .insert(pages)
+        .values({
+          workspaceId,
+          siteId,
+          title,
+          slug,
+          status: "DRAFT",
+          seoTitle: cfg.seoTitle || null,
+          seoDescription: cfg.seoDescription || null,
+          indexable: true,
+        })
+        .returning();
+
+      await db.insert(pageRevisions).values({
+        pageId: page.id,
+        version: 1,
+        contentJson: cfg.contentJson || { root: { props: {} }, content: [] },
+      });
+
+      existingSlugs.add(slug);
+      results.pagesCreated++;
+    }
+
+    const menuAssets = manifest.assets["menu"] || [];
+    for (const asset of menuAssets) {
+      const cfg = asset.configJson as Record<string, any>;
+      const menuName = cfg.name || "Menu";
+      const slot = cfg.slot || null;
+
+      const existingMenus = await db
+        .select({ id: menus.id })
+        .from(menus)
+        .where(and(eq(menus.workspaceId, workspaceId), eq(menus.siteId, siteId), eq(menus.name, menuName)));
+
+      if (existingMenus.length > 0) continue;
+
+      const [menu] = await db
+        .insert(menus)
+        .values({ workspaceId, siteId, name: menuName, slot })
+        .returning();
+
+      const items = cfg.items || [];
+      for (const item of items) {
+        await db.insert(menuItems).values({
+          menuId: menu.id,
+          label: item.label,
+          target: item.target || "#",
+          type: item.type || "page",
+          sortOrder: item.sortOrder ?? 0,
+          openInNewTab: item.openInNewTab ?? false,
+        });
+      }
+
+      results.menusCreated++;
+    }
+
+    const formAssets = manifest.assets["form"] || [];
+    for (const asset of formAssets) {
+      const cfg = asset.configJson as Record<string, any>;
+      const formName = cfg.name || "Contact Form";
+
+      const existingForms = await db
+        .select({ id: forms.id })
+        .from(forms)
+        .where(and(eq(forms.workspaceId, workspaceId), eq(forms.siteId, siteId), eq(forms.name, formName)));
+
+      if (existingForms.length > 0) continue;
+
+      await db.insert(forms).values({
+        workspaceId,
+        siteId,
+        name: formName,
+        fieldsJson: cfg.fields || [],
+        settingsJson: cfg.settings || {},
+        isActive: true,
+      });
+
+      results.formsCreated++;
+    }
+
+    const seoAssets = manifest.assets["seo_defaults"] || [];
+    if (seoAssets.length > 0) {
+      const cfg = seoAssets[0].configJson as Record<string, any>;
+      const existingSeo = await db
+        .select({ id: siteSeoSettings.id })
+        .from(siteSeoSettings)
+        .where(eq(siteSeoSettings.siteId, siteId));
+
+      if (existingSeo.length === 0) {
+        await db.insert(siteSeoSettings).values({
+          siteId,
+          titleSuffix: cfg.titleSuffix || null,
+          defaultIndexable: cfg.defaultIndexable ?? true,
+          robotsTxt: cfg.robotsTxt || null,
+        });
+        results.seoApplied = true;
+      }
+    }
 
     const themeAssets = manifest.assets["theme_preset"] || [];
     if (themeAssets.length > 0) {
       results.themeApplied = true;
     }
 
-    const pageAssets = manifest.assets["page_template"] || [];
-    results.pagesCreated = pageAssets.length;
-
     const sectionAssets = manifest.assets["section_preset"] || [];
     results.sectionsApplied = sectionAssets.length;
-
-    const collectionAssets = manifest.assets["collection_schema"] || [];
-    results.collectionsCreated = collectionAssets.length;
-
-    const contentAssets = manifest.assets["starter_content"] || [];
-    results.starterContentCreated = contentAssets.length;
 
     return {
       siteKitId,
       workspaceId,
       siteId,
+      kitName: kit.name,
       installed: true,
       results,
     };

@@ -2273,6 +2273,96 @@ Customize stages in CRM Settings.`,
     sortOrder: 103,
     isPublished: true,
   },
+  {
+    title: "Contractor & Home Services Starter Kit",
+    slug: "help-sitekit-contractor-starter",
+    content: `Get started with the Contractor & Home Services starter kit.
+
+## What's Included
+
+- **Home Page** with hero section, services grid, testimonials, and call-to-action
+- **Services Page** listing your core offerings with descriptions
+- **About Page** with company story, team bios, and credentials
+- **Contact Page** with a pre-built contact form
+- **Header & Footer Menus** linked to all pages
+- **Theme Preset** with warm amber/orange accent colors suited for trades
+
+## Setup
+
+After installing, visit Pages to see the pre-built pages. Each page includes placeholder content you can replace with your own business details.
+
+## Customization
+
+- Replace placeholder text with your real services, pricing, and contact info
+- Swap images to showcase your actual projects and team
+- Edit the contact form fields in the Forms section
+- Adjust theme colors through the Theme Editor`,
+    category: "marketplace",
+    type: "help",
+    tags: ["site-kit", "contractor", "home-services", "starter"],
+    sortOrder: 104,
+    isPublished: true,
+  },
+  {
+    title: "Professional Services Starter Kit",
+    slug: "help-sitekit-professional-services-starter",
+    content: `Get started with the Professional Services starter kit.
+
+## What's Included
+
+- **Home Page** with hero, service highlights, client logos, and testimonials
+- **Services Page** with detailed service descriptions and pricing tiers
+- **About Page** with team bios and company values
+- **Contact Page** with a consultation request form
+- **Header & Footer Menus** linking all pages
+- **Theme Preset** with teal accent colors suited for professional firms
+
+## Setup
+
+After installing, visit Pages to see the pre-built pages. Each page has placeholder content ready for your firm's details.
+
+## Customization
+
+- Update service descriptions and pricing tiers
+- Add team member photos and bios
+- Customize the consultation form in the Forms section
+- Adjust theme colors through the Theme Editor`,
+    category: "marketplace",
+    type: "help",
+    tags: ["site-kit", "professional", "consulting", "starter"],
+    sortOrder: 105,
+    isPublished: true,
+  },
+  {
+    title: "Restaurant & Hospitality Starter Kit",
+    slug: "help-sitekit-restaurant-starter",
+    content: `Get started with the Restaurant & Hospitality starter kit.
+
+## What's Included
+
+- **Home Page** with hero, featured dishes, ambiance gallery, and hours
+- **Menu Page** with categorized dishes, descriptions, and prices
+- **About Page** with chef bio, restaurant story, and awards
+- **Contact Page** with a reservation request form
+- **Header & Footer Menus** linking all pages
+- **Theme Preset** with gold/burgundy accent colors suited for dining
+
+## Setup
+
+After installing, visit Pages to see the pre-built pages. Each page includes placeholder content you can replace with your restaurant's details.
+
+## Customization
+
+- Add your actual menu items, prices, and photos
+- Replace chef and restaurant story with your own
+- Edit the reservation form fields in the Forms section
+- Adjust theme colors through the Theme Editor`,
+    category: "marketplace",
+    type: "help",
+    tags: ["site-kit", "restaurant", "hospitality", "starter"],
+    sortOrder: 106,
+    isPublished: true,
+  },
 ];
 
 const seedModules = [
@@ -2520,6 +2610,9 @@ export async function seedDatabase() {
     const admin = await seedSuperAdmin();
     const ws = await seedDemoWorkspace(admin.id);
     await seedDemoSite(ws.id);
+
+    const { seedStarterKits } = await import("./modules/siteKits/starterKitsSeed");
+    await seedStarterKits();
   } catch (err) {
     log(`Seed error: ${err}`, "seed");
   }

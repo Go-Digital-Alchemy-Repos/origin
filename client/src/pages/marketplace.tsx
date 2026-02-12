@@ -549,12 +549,17 @@ export default function MarketplacePage() {
                           </p>
                         </div>
                       </div>
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
+                      <div className="mt-3 flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <Badge variant="outline" className="text-[10px]">
                             {typeLabels[item.type]}
                           </Badge>
                           <span className="text-[10px] text-muted-foreground">v{item.version}</span>
+                          {(item.metadata as any)?.is_featured && (
+                            <Badge variant="outline" className="text-[10px] border-primary/40 text-primary" data-testid={`badge-featured-${item.slug}`}>
+                              Featured
+                            </Badge>
+                          )}
                         </div>
                         <Badge variant={isFree ? "secondary" : "default"} className="text-[10px]">
                           {getPriceDisplay(item)}

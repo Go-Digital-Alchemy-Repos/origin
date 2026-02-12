@@ -1,0 +1,220 @@
+You are working in the ORIGIN codebase. Create a reusable “ORIGIN App Add-on Generator” workflow AND run it once to scaffold a new example app add-on. This generator must enforce compatibility with ORIGIN’s platform standards (tenancy, UI, docs, marketplace, versioning, EditorShell, SEO discipline where relevant).
+
+HARD REQUIREMENTS
+- NON-DESTRUCTIVE: do not remove existing features. Prefer new files + minimal wiring.
+- Must comply with ORIGIN governance:
+  - Modular server modules (no giant routes files)
+  - Standard request validation + AppError shape
+  - Tenancy scoping required everywhere
+  - Inter font everywhere
+  - Light + dark modes supported
+  - ORIGIN design tokens/primitives only (no random styling)
+  - Docs updated after every prompt (Dev Docs + Resource Docs)
+  - Deprecate/remove replaced code on the go
+- Apps are NOT runtime plugins. They are first-class ORIGIN modules gated by entitlements, with optional Marketplace purchase mapping.
+- Enabling/disabling an app must never break public site rendering; app components must fail gracefully.
+
+GOAL
+1) Implement an “App Contract” and “App Registry” that all add-ons use.
+2) Implement a generator script (or CLI-like dev script) that scaffolds a new app add-on with:
+   - server module skeleton
+   - app UI skeleton
+   - shared types/schemas skeleton
+   - docs entries (dev + resource)
+   - marketplace catalog stub item
+   - entitlements + gating hooks
+3) Run the generator once to scaffold a sample app named “tickets” (Trouble Ticket System Add-on) as a placeholder (no full features yet).
+
+========================================================
+PART A — ORIGIN APP CONTRACT + REGISTRY
+========================================================
+
+STEP A1 — Define the App Contract
+Create a shared contract type in shared/originApps (or best-fit location) such as:
+
+defineOriginApp({
+  key: string,                     // e.g. "crm", "tickets"
+  name: string,
+  description: string,
+  version: string,                 // semver "0.1.0"
+  entitlementKey: string,          // e.g. "apps.crm"
+  nav: Array<{ label, path, icon, roles? }>,
+  api: { basePath: string },       // e.g. "/api/apps/tickets"
+  docs: {
+    devDocSlug: string,            // for Super Admin Docs Library
+    resourceDocSlug: string        // for client Help & Resources
+  },
+  ui: { baseRoute: string },       // e.g. "/apps/tickets"
+  builder?: {
+    components?: string[],         // component registry IDs exposed by the app (optional)
+    widgets?: string[]             // widget preset IDs (optional)
+  },
+  db?: {
+    tables?: string[],             // doc/reference only
+  },
+  marketplace?: {
+    itemType: "app",
+    defaultBilling: "free" | "trial" | "subscription" | "one_time",
+    stripePriceId?: string | null,
+    trialDays?: number | null,
+    isFeatured?: boolean
+  }
+})
+
+STEP A2 — App Registry
+Create a central registry:
+- shared/originApps/registry.ts
+- It exports an array of apps and helper getters by key.
+
+Add a “Core apps” section and “Add-on apps” section.
+Ensure registry is the single source of truth for:
+- nav injection (client + super admin if needed)
+- Resource Docs filtering (only show docs for enabled apps)
+- Marketplace listing category “Apps”
+- Compatibility checks/version display
+
+========================================================
+PART B — GENERATOR SCRIPT
+========================================================
+
+STEP B1 — Generator command
+Implement a script runnable via package.json scripts, e.g.:
+- pnpm origin:gen-app --key tickets --name "Tickets" --entitlement apps.tickets
+
+The generator must create:
+1) Server module skeleton:
+server/src/modules/apps/<key>/
+  index.ts
+  <key>.routes.ts
+  <key>.service.ts
+  <key>.repo.ts
+  <key>.schemas.ts
+  types.ts
+
+Routes should include:
+- GET /api/apps/<key>/health (returns enabled status + version)
+- CRUD placeholders only if requested later; for now just health + docs endpoints optional
+
+It must:
+- use requireAuth + requireWorkspaceContext
+- use requireEntitlement(entitlementKey)
+- use validateBody/validateQuery helpers
+- return standard error shapes
+
+2) Frontend UI skeleton:
+apps/app/src/apps/<key>/
+  index.tsx (route entry)
+  pages/<Key>Home.tsx
+  components/ (optional)
+  hooks/ (optional)
+
+UI must:
+- use ORIGIN tokens/primitives (Panel/Section/FieldRow)
+- show an “App not enabled” state if entitlement missing
+- include link to Resource Docs entry for that app
+
+3) Shared types/schemas:
+shared/apps/<key>/
+  types.ts
+  schemas.ts
+
+4) Docs:
+- /docs/apps/<key>_DEV.md (developer doc)
+- /docs/apps/<key>_RESOURCE.md (client-facing doc)
+Also insert seed entries into:
+- Super Admin Docs Library (dev doc)
+- Client Resource Docs (resource doc) that only appears if app enabled
+
+5) Marketplace stub:
+- Create (or upsert) marketplace_items row for this app:
+  - type = "app"
+  - name, description, version
+  - metadata includes billing settings (default free)
+  - entitlement_key set
+  - status = "draft" by default
+  - is_featured default false unless specified
+Also ensure there is a safe enable/disable toggle once purchased (or free).
+
+STEP B2 — Validation + Safety
+Generator must validate:
+- key is kebab or snake safe (prefer lowercase)
+- folder does not already exist
+- entitlementKey follows pattern "apps.<key>" (recommended)
+
+========================================================
+PART C — WIRING INTO ORIGIN
+========================================================
+
+STEP C1 — Server route registration
+Ensure there is an app-modules router aggregator:
+server/src/modules/apps/apps.router.ts
+that loads all app modules from registry (or explicit imports) without manual edits each time.
+Keep it modular and maintainable.
+
+STEP C2 — UI route registration + nav injection
+Use the App Registry to inject nav items for enabled apps:
+- Add “Apps” section in the sidebar (or under Marketplace) that lists enabled apps.
+- Only show nav if:
+  - user role permitted
+  - entitlement enabled
+
+STEP C3 — Entitlements conventions
+Standardize entitlements keys:
+- apps.<key> boolean
+- optionally limits/apps.<key>.* later
+
+Make sure requireEntitlement can check nested keys.
+
+STEP C4 — Docs filtering
+Resource Docs must:
+- show “Core Help” always
+- show “App Help” only for enabled apps (by entitlement)
+- allow search across visible docs
+Add a small “App Docs” section in Resource Docs UI that auto-populates based on registry.
+
+========================================================
+PART D — RUN GENERATOR (SAMPLE APP)
+========================================================
+
+Run the generator once to create:
+- key: tickets
+- name: “Tickets”
+- entitlement: apps.tickets
+- version: 0.1.0
+- marketplace billing default: free
+- nav: “Tickets” under Apps
+
+Create the placeholder UI page:
+- Shows “Tickets is installed but not configured yet”
+- Add TODO blocks for future: inbox, statuses, assignments, notifications, portal page
+
+========================================================
+PART E — DOCUMENTATION (MANDATORY)
+========================================================
+
+Update or create:
+1) /docs/ORIGIN_APP_ADDON_STANDARD.md
+   - The app contract
+   - Folder structure
+   - Gating rules
+   - Versioning + deprecation rules
+   - “Definition of done” for shipping an app add-on
+   - How to generate a new app with the generator
+
+2) Add Super Admin Docs Library entry:
+   - “ORIGIN App Add-on Standard + Generator”
+
+3) Add Resource Docs entry (global):
+   - “Managing Apps in ORIGIN” (what apps are, how to enable/disable, safety rules)
+
+OUTPUT REQUIREMENTS
+At the end, print:
+- generator usage (command examples)
+- files created for the generator
+- files created for the sample “tickets” app
+- where to find the app in the UI
+- how entitlements gate it
+- how to publish its marketplace item later
+- docs updated list
+- TODO recommendations (short)
+ 
