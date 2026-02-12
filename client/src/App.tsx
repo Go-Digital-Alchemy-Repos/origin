@@ -49,11 +49,13 @@ import PageEditorPage from "@/pages/page-editor";
 import CollectionsPage from "@/pages/collections";
 import CollectionDetailPage from "@/pages/collection-detail";
 import CollectionItemEditorPage from "@/pages/collection-item-editor";
+import SiteThemePage from "@/pages/site-theme";
 
 function AppRouter() {
   return (
     <Switch>
       <Route path="/app" component={DashboardPage} />
+      <Route path="/app/sites/theme" component={SiteThemePage} />
       <Route path="/app/sites" component={SitesPage} />
       <Route path="/app/modules" component={ModulesPage} />
       <Route path="/app/docs" component={DocsPage} />

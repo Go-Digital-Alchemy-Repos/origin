@@ -24,6 +24,7 @@ import {
   Lock,
   Building2,
   Wrench,
+  Palette,
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,6 +59,7 @@ const clientNav: NavItem[] = [
   { title: "Media", href: "/app/media", icon: Image },
   { title: "Forms", href: "/app/forms", icon: ClipboardList },
   { title: "Menus", href: "/app/menus", icon: MenuIcon },
+  { title: "Theme", href: "/app/sites/theme", icon: Palette },
 ];
 
 const clientSecondaryNav: NavItem[] = [

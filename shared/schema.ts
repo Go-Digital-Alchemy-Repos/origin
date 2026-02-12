@@ -475,3 +475,51 @@ export const insertCollectionItemRevisionSchema = createInsertSchema(collectionI
 
 export type InsertCollectionItemRevision = z.infer<typeof insertCollectionItemRevisionSchema>;
 export type CollectionItemRevision = typeof collectionItemRevisions.$inferSelect;
+
+export const themeTokenModeSchema = z.object({
+  surface: z.string(),
+  surfaceAlt: z.string(),
+  text: z.string(),
+  textMuted: z.string(),
+  border: z.string(),
+  accent: z.string(),
+  accentText: z.string(),
+});
+
+export type ThemeTokenMode = z.infer<typeof themeTokenModeSchema>;
+
+export const themeTokensSchema = z.object({
+  light: themeTokenModeSchema,
+  dark: themeTokenModeSchema,
+  fontHeading: z.string().optional(),
+  fontBody: z.string().optional(),
+  borderRadius: z.enum(["none", "sm", "md", "lg", "full"]).optional(),
+});
+
+export type ThemeTokens = z.infer<typeof themeTokensSchema>;
+
+export const layoutPresetsSchema = z.object({
+  headerStyle: z.enum(["standard", "centered", "minimal", "transparent"]),
+  footerStyle: z.enum(["standard", "minimal", "columns", "centered"]),
+  sectionSpacing: z.enum(["compact", "comfortable", "spacious"]),
+  containerWidth: z.enum(["narrow", "standard", "wide", "full"]),
+  buttonStyle: z.enum(["square", "rounded", "pill"]),
+});
+
+export type LayoutPresets = z.infer<typeof layoutPresetsSchema>;
+
+export const siteThemes = pgTable("site_themes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }).unique(),
+  tokensJson: jsonb("tokens_json").notNull().default(sql`'{}'::jsonb`),
+  layoutJson: jsonb("layout_json").notNull().default(sql`'{}'::jsonb`),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSiteThemeSchema = createInsertSchema(siteThemes).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertSiteTheme = z.infer<typeof insertSiteThemeSchema>;
+export type SiteTheme = typeof siteThemes.$inferSelect;

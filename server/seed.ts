@@ -843,6 +843,65 @@ Every save creates a snapshot. View up to 10 recent versions in the **Revisions*
     sortOrder: 17,
     isPublished: true,
   },
+  {
+    slug: "theme-tokens-layout-presets",
+    title: "Theme Tokens & Layout Presets",
+    content: `ORIGIN theme system provides safe, semantic styling controls for sites. Themes use semantic tokens (surface, text, border, accent) and layout presets (header style, footer style, spacing, widths, button shape).
+
+## Architecture
+- site_themes table: one record per site with tokens_json and layout_json
+- GET/PUT /api/cms/sites/:siteId/theme
+- Auto-creates defaults if no theme exists
+- Zod validation for all token and layout input
+
+## Tokens
+7 semantic color slots per mode (light + dark): surface, surfaceAlt, text, textMuted, border, accent, accentText.
+Plus: fontHeading, fontBody, borderRadius.
+
+## Layout Presets
+headerStyle (standard/centered/minimal/transparent), footerStyle (standard/minimal/columns/centered), sectionSpacing (compact/comfortable/spacious), containerWidth (narrow/standard/wide/full), buttonStyle (square/rounded/pill).
+
+See /docs/THEME_TOKENS_LAYOUT_PRESETS.md for full reference.`,
+    category: "guides",
+    type: "developer",
+    tags: ["theme", "tokens", "layout", "design-system", "styling"],
+    sortOrder: 18,
+    isPublished: true,
+  },
+  {
+    slug: "help-changing-theme",
+    title: "How to Change Your Theme Safely",
+    content: `Learn how to customize your site's appearance using ORIGIN's safe theme controls.
+
+## Accessing the Theme Editor
+1. Go to Theme in the sidebar
+2. Select your site (if you have multiple)
+
+## Changing Colors
+- Switch to the Tokens tab
+- Use color pickers to set light mode and dark mode colors
+- Each color has a semantic purpose (Surface = background, Accent = brand color, etc.)
+- Use the live preview panel on the right to see changes instantly
+
+## Changing Layout
+- Switch to the Layout tab
+- Choose header style, footer style, section spacing, container width, and button shape
+- Preview updates in real time
+
+## Typography
+- Under Tokens, scroll to Typography & Shape
+- Pick heading and body fonts from the dropdown
+- Choose your preferred border radius
+
+## Resetting
+- Click Reset to restore default theme values
+- Changes are only saved when you click Save Theme`,
+    category: "help",
+    type: "help",
+    tags: ["theme", "styling", "design", "customization"],
+    sortOrder: 18,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [
