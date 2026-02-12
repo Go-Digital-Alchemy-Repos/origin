@@ -4,6 +4,7 @@ import { validateBody } from "../shared/validate";
 import { insertMarketplaceItemSchema } from "@shared/schema";
 import { requireAuth, requireRole, requireWorkspaceContext } from "../shared/auth-middleware";
 import { createMarketplaceCheckoutSession } from "../billing/billing.service";
+import { z } from "zod";
 
 export function marketplaceRoutes(): Router {
   const router = Router();
@@ -161,6 +162,96 @@ export function marketplaceRoutes(): Router {
       const { itemId } = req.body;
       await marketplaceService.endPreview(workspaceId, itemId);
       res.json({ success: true });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/installed-items", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
+    try {
+      const workspaceId = req.session!.activeWorkspaceId!;
+      const items = await marketplaceService.getInstalledItemDetails(workspaceId);
+      res.json(items);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/admin/items", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), async (req, res, next) => {
+    try {
+      const items = await marketplaceService.getAllItemsAdmin();
+      res.json(items);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/items/:id/changelogs", requireAuth(), async (req, res, next) => {
+    try {
+      const logs = await marketplaceService.getChangelogs(req.params.id);
+      res.json(logs);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  const bumpVersionBody = z.object({
+    bumpType: z.enum(["major", "minor", "patch"]),
+    notes: z.string().min(1, "Changelog notes are required"),
+  });
+
+  router.post("/items/:id/bump-version", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), async (req, res, next) => {
+    try {
+      const parsed = bumpVersionBody.parse(req.body);
+      const result = await marketplaceService.bumpItemVersion(req.params.id, parsed.bumpType, parsed.notes);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  const setVersionBody = z.object({
+    version: z.string().min(1),
+    notes: z.string().min(1, "Changelog notes are required"),
+  });
+
+  router.post("/items/:id/set-version", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), async (req, res, next) => {
+    try {
+      const parsed = setVersionBody.parse(req.body);
+      const result = await marketplaceService.setItemVersion(req.params.id, parsed.version, parsed.notes);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  const deprecateBody = z.object({
+    message: z.string().optional(),
+  });
+
+  router.post("/items/:id/deprecate", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), async (req, res, next) => {
+    try {
+      const parsed = deprecateBody.parse(req.body);
+      const item = await marketplaceService.deprecateItem(req.params.id, parsed.message);
+      res.json(item);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/items/:id/undeprecate", requireAuth(), requireRole("SUPER_ADMIN", "AGENCY_ADMIN"), async (req, res, next) => {
+    try {
+      const item = await marketplaceService.undeprecateItem(req.params.id);
+      res.json(item);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get("/items/:id/compatibility", requireAuth(), async (req, res, next) => {
+    try {
+      const result = await marketplaceService.checkItemCompatibility(req.params.id);
+      res.json(result);
     } catch (err) {
       next(err);
     }

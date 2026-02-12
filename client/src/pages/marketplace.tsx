@@ -21,6 +21,7 @@ import {
   CreditCard,
   ShieldCheck,
   RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,6 +92,10 @@ export default function MarketplacePage() {
 
   const { data: items, isLoading } = useQuery<MarketplaceItem[]>({
     queryKey: ["/api/marketplace/items"],
+  });
+
+  const { data: installedItemDetails } = useQuery<MarketplaceItem[]>({
+    queryKey: ["/api/marketplace/installed-items"],
   });
 
   const { data: installs } = useQuery<MarketplaceInstall[]>({
@@ -173,10 +178,22 @@ export default function MarketplacePage() {
     return matchesSearch && matchesTab;
   });
 
+  const allKnownItems = (() => {
+    const itemMap = new Map<string, MarketplaceItem>();
+    (items || []).forEach((it) => itemMap.set(it.id, it));
+    (installedItemDetails || []).forEach((it) => itemMap.set(it.id, it));
+    return Array.from(itemMap.values());
+  })();
+
   const displayItems = tab === "installed"
-    ? filteredItems.filter((item) => {
+    ? allKnownItems.filter((item) => {
         const install = installedMap.get(item.id);
-        return install?.enabled;
+        if (!install?.enabled) return false;
+        const matchesSearch =
+          !searchQuery ||
+          item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesSearch;
       })
     : filteredItems;
 
@@ -291,6 +308,17 @@ export default function MarketplacePage() {
                     <p className="mt-1 text-xs text-muted-foreground">v{selectedItem.version}</p>
                   </div>
                 </div>
+                {selectedItem.deprecated && (
+                  <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3" data-testid="deprecation-notice">
+                    <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      This item has been deprecated
+                    </div>
+                    {selectedItem.deprecationMessage && (
+                      <p className="mt-1 text-sm text-muted-foreground">{selectedItem.deprecationMessage}</p>
+                    )}
+                  </div>
+                )}
                 <div className="mt-6">
                   <h2 className="text-lg font-semibold mb-2">Description</h2>
                   <p className="text-sm text-muted-foreground leading-relaxed">
@@ -504,9 +532,12 @@ export default function MarketplacePage() {
                           <TypeIcon className="h-5 w-5 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-medium text-sm truncate">{item.name}</h3>
-                            {isInstalled && (
+                            {item.deprecated && (
+                              <Badge variant="destructive" className="text-[10px]" data-testid={`badge-deprecated-${item.slug}`}>Deprecated</Badge>
+                            )}
+                            {isInstalled && !item.deprecated && (
                               <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
                             )}
                             {isPurchased && !isInstalled && (

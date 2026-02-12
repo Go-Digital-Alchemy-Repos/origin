@@ -1,7 +1,7 @@
 import { db } from "../../db";
-import { marketplaceItems, marketplaceInstalls, previewSessions, workspacePurchases } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
-import type { InsertMarketplaceItem, InsertMarketplaceInstall, InsertPreviewSession, InsertWorkspacePurchase } from "@shared/schema";
+import { marketplaceItems, marketplaceInstalls, previewSessions, workspacePurchases, marketplaceChangelogs } from "@shared/schema";
+import { eq, and, desc } from "drizzle-orm";
+import type { InsertMarketplaceItem, InsertMarketplaceInstall, InsertPreviewSession, InsertWorkspacePurchase, InsertMarketplaceChangelog } from "@shared/schema";
 
 class MarketplaceRepo {
   async findAllItems() {
@@ -13,14 +13,18 @@ class MarketplaceRepo {
   }
 
   async findPublishedItems() {
-    return db.select().from(marketplaceItems).where(eq(marketplaceItems.status, "published")).orderBy(marketplaceItems.name);
+    return db
+      .select()
+      .from(marketplaceItems)
+      .where(and(eq(marketplaceItems.status, "published"), eq(marketplaceItems.deprecated, false)))
+      .orderBy(marketplaceItems.name);
   }
 
   async findPublishedItemsByType(type: string) {
     return db
       .select()
       .from(marketplaceItems)
-      .where(and(eq(marketplaceItems.type, type), eq(marketplaceItems.status, "published")))
+      .where(and(eq(marketplaceItems.type, type), eq(marketplaceItems.status, "published"), eq(marketplaceItems.deprecated, false)))
       .orderBy(marketplaceItems.name);
   }
 
@@ -130,6 +134,19 @@ class MarketplaceRepo {
       .where(eq(workspacePurchases.stripeSubscriptionItemId, stripeSubscriptionItemId))
       .returning();
     return purchase ?? null;
+  }
+
+  async findChangelogsByItem(itemId: string) {
+    return db
+      .select()
+      .from(marketplaceChangelogs)
+      .where(eq(marketplaceChangelogs.itemId, itemId))
+      .orderBy(desc(marketplaceChangelogs.createdAt));
+  }
+
+  async createChangelog(data: InsertMarketplaceChangelog) {
+    const [entry] = await db.insert(marketplaceChangelogs).values(data).returning();
+    return entry;
   }
 }
 

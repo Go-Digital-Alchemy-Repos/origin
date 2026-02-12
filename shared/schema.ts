@@ -306,6 +306,9 @@ export const marketplaceItems = pgTable("marketplace_items", {
   entitlementPayloadJson: jsonb("entitlement_payload_json"),
   version: text("version").notNull().default("1.0.0"),
   status: text("status").notNull().default("published"),
+  deprecated: boolean("deprecated").notNull().default(false),
+  deprecationMessage: text("deprecation_message"),
+  minPlatformVersion: text("min_platform_version"),
   category: text("category"),
   tags: text("tags").array().default(sql`'{}'::text[]`),
   metadata: jsonb("metadata"),
@@ -329,6 +332,7 @@ export const marketplaceInstalls = pgTable("marketplace_installs", {
   itemId: varchar("item_id").notNull().references(() => marketplaceItems.id, { onDelete: "cascade" }),
   enabled: boolean("enabled").notNull().default(true),
   purchased: boolean("purchased").notNull().default(false),
+  installedVersion: text("installed_version"),
   installedAt: timestamp("installed_at").defaultNow(),
 });
 
@@ -339,6 +343,23 @@ export const insertMarketplaceInstallSchema = createInsertSchema(marketplaceInst
 
 export type InsertMarketplaceInstall = z.infer<typeof insertMarketplaceInstallSchema>;
 export type MarketplaceInstall = typeof marketplaceInstalls.$inferSelect;
+
+export const marketplaceChangelogs = pgTable("marketplace_changelogs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  itemId: varchar("item_id").notNull().references(() => marketplaceItems.id, { onDelete: "cascade" }),
+  version: text("version").notNull(),
+  changeType: text("change_type").notNull().default("minor"),
+  notes: text("notes").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMarketplaceChangelogSchema = createInsertSchema(marketplaceChangelogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertMarketplaceChangelog = z.infer<typeof insertMarketplaceChangelogSchema>;
+export type MarketplaceChangelog = typeof marketplaceChangelogs.$inferSelect;
 
 export const previewSessions = pgTable("preview_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

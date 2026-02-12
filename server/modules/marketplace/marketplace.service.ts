@@ -1,6 +1,7 @@
 import { marketplaceRepo } from "./marketplace.repo";
 import { NotFoundError, ValidationError } from "../shared/errors";
-import type { InsertMarketplaceItem, InsertMarketplaceInstall } from "@shared/schema";
+import type { InsertMarketplaceItem, InsertMarketplaceInstall, InsertMarketplaceChangelog } from "@shared/schema";
+import { checkCompatibility, bumpVersion, isValidSemVer, type BumpType } from "./versioning";
 
 class MarketplaceService {
   async getAllItems() {
@@ -57,13 +58,22 @@ class MarketplaceService {
 
   async installItem(workspaceId: string, itemId: string) {
     const existing = await marketplaceRepo.findInstall(workspaceId, itemId);
-    if (existing) {
-      if (existing.enabled) throw new ValidationError("Item already installed");
-      return marketplaceRepo.updateInstall(existing.id, { enabled: true });
-    }
-
     const item = await marketplaceRepo.findItemById(itemId);
     if (!item) throw new NotFoundError("Marketplace item");
+
+    if (existing) {
+      if (existing.enabled) throw new ValidationError("Item already installed");
+      const compat = checkCompatibility(item.minPlatformVersion);
+      if (!compat.compatible) throw new ValidationError(compat.reason!);
+      return marketplaceRepo.updateInstall(existing.id, { enabled: true, installedVersion: item.version });
+    }
+
+    if (item.deprecated) {
+      throw new ValidationError("This item has been deprecated and is no longer available for new installs");
+    }
+
+    const compat = checkCompatibility(item.minPlatformVersion);
+    if (!compat.compatible) throw new ValidationError(compat.reason!);
 
     if (item.billingType !== "free" && !item.isFree) {
       const purchase = await marketplaceRepo.findPurchase(workspaceId, itemId);
@@ -77,6 +87,7 @@ class MarketplaceService {
       itemId,
       enabled: true,
       purchased: item.isFree || item.billingType === "free",
+      installedVersion: item.version,
     });
   }
 
@@ -98,15 +109,19 @@ class MarketplaceService {
       stripeSubscriptionItemId: stripeSubscriptionItemId ?? null,
     });
 
+    const item = await marketplaceRepo.findItemById(itemId);
+    const currentVersion = item?.version ?? null;
+
     const install = await marketplaceRepo.findInstall(workspaceId, itemId);
     if (install) {
-      await marketplaceRepo.updateInstall(install.id, { purchased: true, enabled: true });
+      await marketplaceRepo.updateInstall(install.id, { purchased: true, enabled: true, installedVersion: currentVersion });
     } else {
       await marketplaceRepo.createInstall({
         workspaceId,
         itemId,
         enabled: true,
         purchased: true,
+        installedVersion: currentVersion,
       });
     }
 
@@ -135,6 +150,74 @@ class MarketplaceService {
     const existing = await marketplaceRepo.findPreviewSession(workspaceId, itemId);
     if (!existing) throw new NotFoundError("Preview session");
     return marketplaceRepo.deletePreviewSession(existing.id);
+  }
+
+  async getInstalledItemDetails(workspaceId: string) {
+    const installs = await marketplaceRepo.findInstallsByWorkspace(workspaceId);
+    const enabledInstalls = installs.filter((i) => i.enabled);
+    const items = await Promise.all(
+      enabledInstalls.map((inst) => marketplaceRepo.findItemById(inst.itemId)),
+    );
+    return items.filter(Boolean);
+  }
+
+  async bumpItemVersion(itemId: string, bumpType: BumpType, notes: string) {
+    const item = await marketplaceRepo.findItemById(itemId);
+    if (!item) throw new NotFoundError("Marketplace item");
+    if (!isValidSemVer(item.version)) throw new ValidationError(`Current version "${item.version}" is not valid SemVer`);
+
+    const newVersion = bumpVersion(item.version, bumpType);
+    const updated = await marketplaceRepo.updateItem(itemId, { version: newVersion });
+    const changelog = await marketplaceRepo.createChangelog({
+      itemId,
+      version: newVersion,
+      changeType: bumpType,
+      notes,
+    });
+
+    return { item: updated, changelog };
+  }
+
+  async setItemVersion(itemId: string, version: string, notes: string) {
+    if (!isValidSemVer(version)) throw new ValidationError("Invalid version format (must be MAJOR.MINOR.PATCH)");
+    const item = await marketplaceRepo.findItemById(itemId);
+    if (!item) throw new NotFoundError("Marketplace item");
+
+    const updated = await marketplaceRepo.updateItem(itemId, { version });
+    const changelog = await marketplaceRepo.createChangelog({
+      itemId,
+      version,
+      changeType: "custom",
+      notes,
+    });
+
+    return { item: updated, changelog };
+  }
+
+  async deprecateItem(itemId: string, message?: string) {
+    const item = await marketplaceRepo.findItemById(itemId);
+    if (!item) throw new NotFoundError("Marketplace item");
+    return marketplaceRepo.updateItem(itemId, { deprecated: true, deprecationMessage: message ?? null });
+  }
+
+  async undeprecateItem(itemId: string) {
+    const item = await marketplaceRepo.findItemById(itemId);
+    if (!item) throw new NotFoundError("Marketplace item");
+    return marketplaceRepo.updateItem(itemId, { deprecated: false, deprecationMessage: null });
+  }
+
+  async getChangelogs(itemId: string) {
+    return marketplaceRepo.findChangelogsByItem(itemId);
+  }
+
+  async addChangelog(data: InsertMarketplaceChangelog) {
+    return marketplaceRepo.createChangelog(data);
+  }
+
+  async checkItemCompatibility(itemId: string) {
+    const item = await marketplaceRepo.findItemById(itemId);
+    if (!item) throw new NotFoundError("Marketplace item");
+    return checkCompatibility(item.minPlatformVersion);
   }
 }
 

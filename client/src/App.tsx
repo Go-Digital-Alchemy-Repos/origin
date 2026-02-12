@@ -48,6 +48,7 @@ import BillingPage from "@/pages/billing";
 import HelpPage from "@/pages/help";
 import MarketplacePage from "@/pages/marketplace";
 import ComponentRegistryPage from "@/pages/component-registry";
+import StudioMarketplacePage from "@/pages/studio-marketplace";
 import CmsPagesPage from "@/pages/cms-pages";
 import PageEditorPage from "@/pages/page-editor";
 import CollectionsPage from "@/pages/collections";
@@ -95,7 +96,7 @@ function AppRouter() {
       <Route path="/app/studio/sections">{() => <StubPage title="Sections" description="Design reusable page sections. Build a library of drag-and-drop content blocks." icon="layers" studio />}</Route>
       <Route path="/app/studio/widgets">{() => <StubPage title="Widgets" description="Create and manage interactive widgets. Embeddable components for any site." icon="component" studio />}</Route>
       <Route path="/app/studio/apps">{() => <StubPage title="Apps" description="Platform applications and integrations. Manage first-party and third-party apps." icon="box" studio />}</Route>
-      <Route path="/app/studio/marketplace">{() => <StubPage title="Marketplace Catalog" description="Manage the marketplace catalog. Review, approve, and publish modules and themes." icon="store" studio />}</Route>
+      <Route path="/app/studio/marketplace" component={StudioMarketplacePage} />
       <Route path="/app/studio/components" component={ComponentRegistryPage} />
       <Route path="/app/studio/status">{() => <StubPage title="System Status" description="Platform health monitoring. Uptime, performance metrics, and service status." icon="activity" studio />}</Route>
       <Route path="/app/billing" component={BillingPage} />
