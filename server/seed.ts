@@ -1156,6 +1156,109 @@ Assigning a menu to the "Header" or "Footer" slot makes it appear automatically 
     sortOrder: 20,
     isPublished: true,
   },
+  {
+    title: "Forms System",
+    slug: "forms-system",
+    content: `ORIGIN's built-in Forms system lets you create customizable forms, collect submissions, and integrate with external services via webhooks.
+
+## Architecture
+
+Forms are scoped by workspace + site and stored in the \`forms\` table with JSONB columns for flexible field definitions and settings.
+
+### Tables
+- \`forms\` — Form definitions with \`fields_json\` (field array) and \`settings_json\` (configuration)
+- \`form_submissions\` — Submission payloads with IP hash for rate limiting
+
+### Field Types
+text, textarea, email, phone, select, checkbox, radio, date
+
+### Settings
+- \`submitLabel\` — Custom submit button text
+- \`successMessage\` — Post-submission message
+- \`notifyEmails\` — Email notification recipients
+- \`webhookUrl\` — POST submission data to external URL
+- \`honeypotEnabled\` — Hidden field to catch bots
+- \`rateLimitPerMinute\` — Max submissions per IP per minute
+
+## API Endpoints
+
+### Authenticated (require auth + workspace context)
+- GET /api/cms/sites/:siteId/forms — list forms for a site
+- POST /api/cms/sites/:siteId/forms — create form
+- GET /api/cms/forms/:formId — get form
+- PATCH /api/cms/forms/:formId — update form
+- DELETE /api/cms/forms/:formId — delete form
+- GET /api/cms/forms/:formId/submissions — list submissions (paginated)
+- DELETE /api/cms/forms/:formId/submissions/:submissionId — delete submission
+
+### Public (no auth)
+- POST /api/cms/public/forms/:formId/submit — submit form
+- GET /api/cms/public/forms/:formId/definition — get form fields/settings for rendering
+
+## Page Builder Integration
+
+The \`form-embed\` component in the Global Component Registry allows embedding forms in pages via the drag-and-drop builder.`,
+    category: "architecture",
+    type: "developer",
+    tags: ["forms", "submissions", "webhooks", "spam-protection", "cms"],
+    sortOrder: 26,
+    isPublished: true,
+  },
+  {
+    title: "Building and Managing Forms",
+    slug: "help-forms",
+    content: `Create powerful forms to collect information from your website visitors.
+
+## Creating a Form
+
+1. Go to **Forms** in the sidebar
+2. Click **New Form**
+3. Give it a name (e.g., "Contact Form")
+
+## Adding Fields
+
+1. Open a form by clicking on it
+2. Click **Add Field**
+3. Choose a field type:
+   - **Text** — short text input
+   - **Text Area** — multi-line text
+   - **Email** — email address with validation
+   - **Phone** — phone number
+   - **Dropdown** — select from options
+   - **Checkbox** — yes/no toggle
+   - **Radio** — choose one from options
+   - **Date** — date picker
+4. Set the label, placeholder, and whether it's required
+5. For Dropdown and Radio fields, enter options (one per line)
+
+## Organizing Fields
+
+Use the **up/down arrows** to reorder fields. Click the **pencil** icon to edit or the **trash** icon to remove.
+
+## Form Settings
+
+Switch to the **Settings** tab to configure:
+- **Submit Button Label** — customize the button text
+- **Success Message** — what visitors see after submitting
+- **Notification Emails** — get notified on each submission
+- **Webhook URL** — send data to external services (e.g., Zapier)
+- **Spam Protection** — enable honeypot and set rate limits
+
+## Viewing Submissions
+
+Click the **Submissions** button to see all form responses in a table. You can paginate through submissions and delete individual entries.
+
+## Embedding in Pages
+
+Use the **Form Embed** block in the page builder to add a form to any page. Just enter the form ID.
+
+You can also copy an embed code using the **Embed** button in the form editor.`,
+    category: "help",
+    type: "help",
+    tags: ["forms", "submissions", "contact", "embed", "page-builder"],
+    sortOrder: 21,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [

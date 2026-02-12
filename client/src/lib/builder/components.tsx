@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function parseArrayProp(val: unknown): any[] {
   if (Array.isArray(val)) return val;
@@ -448,6 +448,203 @@ export function SpacerBlock({
   );
 }
 
+export function FormEmbedBlock({
+  formId = "",
+  heading = "",
+  description = "",
+  variant = "card",
+}: Record<string, any>) {
+  const [form, setForm] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [successMsg, setSuccessMsg] = useState("");
+
+  useEffect(() => {
+    if (!formId) return;
+    setLoading(true);
+    fetch(`/api/cms/public/forms/${formId}/definition`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data) setForm(data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [formId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formId) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/cms/public/forms/${formId}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSubmitted(true);
+        setSuccessMsg(data.message || "Thank you!");
+      } else {
+        setError(data.error?.message || "Submission failed");
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const fields: any[] = form?.fields || [];
+  const settings = form?.settings || {};
+
+  const formContent = () => {
+    if (!formId) {
+      return <p className="text-sm text-muted-foreground py-8 text-center" data-testid="block-form-no-id">No form ID configured.</p>;
+    }
+    if (loading) {
+      return <div className="flex justify-center py-8"><div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
+    }
+    if (submitted) {
+      return (
+        <div className="py-8 text-center" data-testid="block-form-success">
+          <p className="text-lg font-medium mb-1">{successMsg}</p>
+        </div>
+      );
+    }
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4" data-testid="block-form-embed">
+        {fields.map((field: any) => (
+          <div key={field.id}>
+            <label className="block text-sm font-medium mb-1">
+              {field.label}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
+            </label>
+            {(field.type === "text" || field.type === "email" || field.type === "phone" || field.type === "date") && (
+              <input
+                type={field.type === "phone" ? "tel" : field.type}
+                placeholder={field.placeholder || ""}
+                required={field.required}
+                value={values[field.id] || ""}
+                onChange={(e) => setValues((v) => ({ ...v, [field.id]: e.target.value }))}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                data-testid={`form-field-${field.id}`}
+              />
+            )}
+            {field.type === "textarea" && (
+              <textarea
+                placeholder={field.placeholder || ""}
+                required={field.required}
+                value={values[field.id] || ""}
+                onChange={(e) => setValues((v) => ({ ...v, [field.id]: e.target.value }))}
+                rows={3}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                data-testid={`form-field-${field.id}`}
+              />
+            )}
+            {field.type === "select" && (
+              <select
+                required={field.required}
+                value={values[field.id] || ""}
+                onChange={(e) => setValues((v) => ({ ...v, [field.id]: e.target.value }))}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                data-testid={`form-field-${field.id}`}
+              >
+                <option value="">{field.placeholder || "Select..."}</option>
+                {(field.options || []).map((opt: string) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            )}
+            {field.type === "checkbox" && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={values[field.id] === "true"}
+                  onChange={(e) => setValues((v) => ({ ...v, [field.id]: e.target.checked ? "true" : "" }))}
+                  className="h-4 w-4"
+                  data-testid={`form-field-${field.id}`}
+                />
+                <span className="text-sm">{field.placeholder || field.label}</span>
+              </div>
+            )}
+            {field.type === "radio" && (
+              <div className="space-y-1">
+                {(field.options || []).map((opt: string) => (
+                  <div key={opt} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name={field.id}
+                      value={opt}
+                      checked={values[field.id] === opt}
+                      onChange={() => setValues((v) => ({ ...v, [field.id]: opt }))}
+                      className="h-4 w-4"
+                      data-testid={`form-field-${field.id}-${opt}`}
+                    />
+                    <span className="text-sm">{opt}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+        {settings.honeypotEnabled && (
+          <input
+            type="text"
+            name="_hp_field"
+            style={{ position: "absolute", left: "-9999px", opacity: 0, height: 0 }}
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          data-testid="block-form-submit"
+        >
+          {submitting ? "Submitting..." : (settings.submitLabel || "Submit")}
+        </button>
+      </form>
+    );
+  };
+
+  const inner = (
+    <>
+      {heading && <h2 className="text-xl font-semibold mb-1">{heading}</h2>}
+      {description && <p className="text-sm text-muted-foreground mb-4">{description}</p>}
+      {formContent()}
+    </>
+  );
+
+  if (variant === "card") {
+    return (
+      <section className="py-12 px-6" data-testid="block-form-embed-section">
+        <Card className="max-w-lg mx-auto">
+          <CardContent className="p-6">{inner}</CardContent>
+        </Card>
+      </section>
+    );
+  }
+
+  if (variant === "minimal") {
+    return (
+      <div className="max-w-lg mx-auto py-8 px-6" data-testid="block-form-embed-section">
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <section className="py-12 px-6 max-w-2xl mx-auto" data-testid="block-form-embed-section">
+      {inner}
+    </section>
+  );
+}
+
 export const componentRenderMap: Record<string, React.ComponentType<any>> = {
   hero: HeroBlock,
   "feature-grid": FeatureGridBlock,
@@ -459,4 +656,5 @@ export const componentRenderMap: Record<string, React.ComponentType<any>> = {
   "rich-text": RichTextBlock,
   divider: DividerBlock,
   spacer: SpacerBlock,
+  "form-embed": FormEmbedBlock,
 };

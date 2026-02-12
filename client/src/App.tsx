@@ -51,6 +51,7 @@ import CollectionDetailPage from "@/pages/collection-detail";
 import CollectionItemEditorPage from "@/pages/collection-item-editor";
 import SiteThemePage from "@/pages/site-theme";
 import MenusPage from "@/pages/menus";
+import FormsPage from "@/pages/forms";
 
 function AppRouter() {
   return (
@@ -70,7 +71,7 @@ function AppRouter() {
       <Route path="/app/collections" component={CollectionsPage} />
       <Route path="/app/blog">{() => <StubPage title="Blog" description="Create and manage blog posts. Write, schedule, and publish content with rich editing." icon="pen-tool" />}</Route>
       <Route path="/app/media">{() => <StubPage title="Media" description="Upload, organize, and manage your media assets. Images, videos, documents, and more." icon="image" />}</Route>
-      <Route path="/app/forms">{() => <StubPage title="Forms" description="Build custom forms with validation, conditional logic, and submission workflows." icon="clipboard-list" />}</Route>
+      <Route path="/app/forms" component={FormsPage} />
       <Route path="/app/menus" component={MenusPage} />
       <Route path="/app/marketplace" component={MarketplacePage} />
       <Route path="/app/crm">{() => <StubPage title="CRM" description="Customer relationship management. Track leads, contacts, and interactions." icon="contact" locked />}</Route>

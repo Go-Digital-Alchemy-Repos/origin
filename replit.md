@@ -51,6 +51,10 @@ The frontend utilizes React 18 with Tailwind CSS and shadcn/ui for a modern, com
 -   `/app/collections/:id` — Collection detail (schema + items)
 -   `/app/collections/:id/items/:itemId` — Item editor
 -   `/api/cms/sites/:siteId/theme` — Theme GET/PUT
+-   `/app/forms` — Forms list and builder
+-   `/api/cms/sites/:siteId/forms` — Forms CRUD
+-   `/api/cms/public/forms/:formId/submit` — Public form submission
+-   `/api/cms/public/forms/:formId/definition` — Public form definition
 -   `/api/public-preview/:siteSlug` — Public site preview (dev testing)
 -   `<slug>.originapp.ai/*` — Public site rendering (production, hostname-based)
 
@@ -65,6 +69,8 @@ The frontend utilizes React 18 with Tailwind CSS and shadcn/ui for a modern, com
 -   `collections` — Custom content type definitions
 -   `collection_items` — Items within collections
 -   `collection_item_revisions` — Revision history for items
+-   `forms` — Form definitions with fields_json + settings_json (workspace + site scoped)
+-   `form_submissions` — Submission payloads with IP hash + user agent
 
 ## Server Modules
 
@@ -73,6 +79,7 @@ Located at `server/modules/`:
 -   `cmsPages/` — CMS pages CRUD + revisions
 -   `cmsCollections/` — Collections CRUD + items + revisions
 -   `cmsMenus/` — Navigation menus CRUD + items + reorder + slot assignment
+-   `forms/` — Forms CRUD + public submit + definition endpoint + submissions
 -   `publicSite/` — Public site rendering, host resolver, cache headers + purge
 -   `auth/` — Auth/workspace routes
 -   `billing/` — Stripe billing
@@ -83,6 +90,17 @@ Located at `server/modules/`:
 -   `modules/` — Platform modules
 
 ## Recent Changes
+
+- 2026-02-12: Forms system (Gravity Forms-style)
+  - Added forms + form_submissions DB tables with JSONB fields for flexible config
+  - Created forms server module (service, routes) with full CRUD + public submit + definition endpoint
+  - 8 field types: text, textarea, email, phone, select, checkbox, radio, date
+  - Spam protection: honeypot hidden field + IP-based rate limiting (configurable per minute)
+  - Webhook integration: POST submission data to external URLs
+  - Built forms UI page at /app/forms with field builder, settings editor, preview, and submissions viewer
+  - Added FormEmbed component to component registry + React render map + public site renderer
+  - Public endpoints: submit form + get form definition (no auth required)
+  - Seeded 2 doc entries (developer + help)
 
 - 2026-02-12: Navigation menus system
   - Added menus + menu_items DB tables with parent_id nesting and sort_order

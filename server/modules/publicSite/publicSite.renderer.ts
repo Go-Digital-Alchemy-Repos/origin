@@ -107,6 +107,54 @@ function renderContentBlock(block: any): string {
       return `<div style="height:${hMap[props.height] || "32px"}" aria-hidden="true"></div>`;
     }
 
+    case "form-embed": {
+      const fId = props.formId || "";
+      if (!fId) return `<p style="text-align:center;color:#6b7280;padding:32px">No form configured.</p>`;
+      const wrapper = props.variant === "card"
+        ? (c: string) => `<section style="padding:48px 24px"><div style="max-width:500px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;padding:24px">${c}</div></section>`
+        : props.variant === "minimal"
+          ? (c: string) => `<div style="max-width:500px;margin:0 auto;padding:32px 24px">${c}</div>`
+          : (c: string) => `<section style="padding:48px 24px;max-width:640px;margin:0 auto">${c}</section>`;
+      const heading = props.heading ? `<h2 style="font-size:1.25rem;font-weight:600;margin:0 0 4px">${escapeHtml(props.heading)}</h2>` : "";
+      const desc = props.description ? `<p style="font-size:0.875rem;color:#6b7280;margin:0 0 16px">${escapeHtml(props.description)}</p>` : "";
+      return wrapper(`${heading}${desc}<div id="origin-form-${escapeHtml(fId)}" data-form-id="${escapeHtml(fId)}"></div>
+        <script>
+          (function(){
+            function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+            function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+            var c=document.getElementById('origin-form-${escapeHtml(fId)}');
+            if(!c)return;
+            fetch('/api/cms/public/forms/${escapeHtml(fId)}/definition')
+              .then(function(r){return r.json()})
+              .then(function(d){
+                var f=d.fields||[];var s=d.settings||{};
+                var h='<form id="of-'+escAttr(d.id)+'" style="display:flex;flex-direction:column;gap:16px">';
+                f.forEach(function(fl){
+                  h+='<div><label style="display:block;font-size:0.875rem;font-weight:500;margin-bottom:4px">'+esc(fl.label)+(fl.required?'<span style="color:#ef4444"> *</span>':'')+'</label>';
+                  if(fl.type==='textarea') h+='<textarea name="'+escAttr(fl.id)+'" placeholder="'+escAttr(fl.placeholder||'')+'" '+(fl.required?'required':'')+' rows="3" style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem"></textarea>';
+                  else if(fl.type==='select'){h+='<select name="'+escAttr(fl.id)+'" '+(fl.required?'required':'')+' style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem"><option value="">'+esc(fl.placeholder||'Select...')+'</option>';(fl.options||[]).forEach(function(o){h+='<option value="'+escAttr(o)+'">'+esc(o)+'</option>'});h+='</select>';}
+                  else if(fl.type==='checkbox') h+='<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" name="'+escAttr(fl.id)+'"><span style="font-size:0.875rem">'+esc(fl.placeholder||fl.label)+'</span></label>';
+                  else if(fl.type==='radio'){(fl.options||[]).forEach(function(o){h+='<label style="display:flex;align-items:center;gap:8px"><input type="radio" name="'+escAttr(fl.id)+'" value="'+escAttr(o)+'"><span style="font-size:0.875rem">'+esc(o)+'</span></label>'});}
+                  else h+='<input type="'+(fl.type==='phone'?'tel':escAttr(fl.type))+'" name="'+escAttr(fl.id)+'" placeholder="'+escAttr(fl.placeholder||'')+'" '+(fl.required?'required':'')+' style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:0.875rem">';
+                  h+='</div>';
+                });
+                if(s.honeypotEnabled) h+='<input type="text" name="_hp_field" style="position:absolute;left:-9999px;opacity:0;height:0" tabindex="-1" autocomplete="off">';
+                h+='<button type="submit" style="width:100%;padding:8px 16px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:0.875rem;font-weight:500;cursor:pointer">'+esc(s.submitLabel||'Submit')+'</button></form>';
+                c.innerHTML=h;
+                var form=document.getElementById('of-'+escAttr(d.id));
+                form.addEventListener('submit',function(e){
+                  e.preventDefault();var fd=new FormData(form);var body={};fd.forEach(function(v,k){body[k]=v});
+                  var btn=form.querySelector('button[type=submit]');btn.disabled=true;btn.textContent='Submitting...';
+                  fetch('/api/cms/public/forms/'+encodeURIComponent(d.id)+'/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+                    .then(function(r){return r.json()})
+                    .then(function(r){if(r.success){c.innerHTML='<p style="text-align:center;padding:32px;font-size:1.125rem;font-weight:500">'+esc(r.message||'Thank you!')+'</p>'}else{btn.disabled=false;btn.textContent=esc(s.submitLabel||'Submit');alert(r.error&&r.error.message||'Submission failed')}})
+                    .catch(function(){btn.disabled=false;btn.textContent=esc(s.submitLabel||'Submit');alert('Something went wrong')});
+                });
+              }).catch(function(){c.innerHTML='<p style="text-align:center;color:#ef4444">Could not load form.</p>'});
+          })();
+        </script>`);
+    }
+
     case "testimonials": {
       const items = Array.isArray(props.testimonials) ? props.testimonials : [];
       return `<section style="padding:64px 24px;max-width:1200px;margin:0 auto">

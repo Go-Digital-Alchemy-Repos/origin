@@ -719,4 +719,71 @@ When \`responsiveCollapse\` is true:
     tags: ["spacer", "spacing", "utility", "layout"],
     status: "stable",
   },
+  {
+    name: "Form Embed",
+    slug: "form-embed",
+    description: "Embed a form created in the ORIGIN form builder. Select a form by ID and it renders with all configured fields.",
+    category: "utility",
+    icon: "clipboard-list",
+    version: "1.0.0",
+    propSchema: [
+      { name: "formId", type: "string", label: "Form ID", required: true, description: "The ID of the form to embed." },
+      { name: "heading", type: "string", label: "Heading", description: "Optional heading above the form." },
+      { name: "description", type: "string", label: "Description", description: "Optional description text." },
+      { name: "variant", type: "enum", label: "Style", options: ["default", "card", "minimal"], default: "card" },
+    ],
+    defaultPreset: {
+      name: "Default",
+      description: "Card-style embedded form with heading.",
+      props: {
+        formId: "",
+        heading: "Get in Touch",
+        description: "Fill out the form below and we'll get back to you.",
+        variant: "card",
+      },
+    },
+    additionalPresets: [
+      {
+        name: "Minimal",
+        description: "Clean form without card wrapper.",
+        props: { formId: "", heading: "", description: "", variant: "minimal" },
+      },
+    ],
+    previewConfig: {
+      width: "contained",
+      height: "auto",
+      background: "light",
+    },
+    docsMarkdown: `# Form Embed
+
+Embed a form from the ORIGIN form builder into any page.
+
+## Setup
+
+1. Create a form in the **Forms** section.
+2. Copy the form ID.
+3. Add a Form Embed block and paste the ID.
+
+## Props
+
+- **Form ID** (required): The UUID of the form.
+- **Heading**: Optional heading displayed above the form.
+- **Description**: Optional description text.
+- **Variant**: "card" (bordered), "default" (section), or "minimal" (no wrapper).`,
+    devNotes: `## Form Embed — Developer Notes
+
+### Public Submission
+The form posts to \`/api/cms/public/forms/:formId/submit\` with field values keyed by field ID.
+
+### Spam Protection
+- Honeypot field rendered as hidden input.
+- Server-side rate limiting per IP.
+
+### Rendering
+- Fetches form definition at render time.
+- Maps fieldsJson to HTML inputs.
+- Shows success message on submission.`,
+    tags: ["form", "embed", "contact", "utility", "submission"],
+    status: "stable",
+  },
 ];

@@ -588,3 +588,67 @@ export const insertSiteDomainSchema = createInsertSchema(siteDomains).omit({
 
 export type InsertSiteDomain = z.infer<typeof insertSiteDomainSchema>;
 export type SiteDomain = typeof siteDomains.$inferSelect;
+
+export const formFieldTypeEnum = z.enum([
+  "text", "textarea", "email", "phone", "select", "checkbox", "radio", "date",
+]);
+export type FormFieldType = z.infer<typeof formFieldTypeEnum>;
+
+export const formFieldSchema = z.object({
+  id: z.string(),
+  type: formFieldTypeEnum,
+  label: z.string(),
+  placeholder: z.string().optional(),
+  required: z.boolean().optional(),
+  options: z.array(z.string()).optional(),
+  defaultValue: z.string().optional(),
+});
+export type FormField = z.infer<typeof formFieldSchema>;
+
+export const formSettingsSchema = z.object({
+  notifyEmails: z.array(z.string().email()).optional(),
+  webhookUrl: z.string().url().optional().or(z.literal("")),
+  submitLabel: z.string().optional(),
+  successMessage: z.string().optional(),
+  honeypotEnabled: z.boolean().optional(),
+  rateLimitPerMinute: z.number().int().min(1).max(120).optional(),
+});
+export type FormSettings = z.infer<typeof formSettingsSchema>;
+
+export const forms = pgTable("forms", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  fieldsJson: jsonb("fields_json").notNull().default([]),
+  settingsJson: jsonb("settings_json").notNull().default({}),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertFormSchema = createInsertSchema(forms).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertForm = z.infer<typeof insertFormSchema>;
+export type Form = typeof forms.$inferSelect;
+
+export const formSubmissions = pgTable("form_submissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  formId: varchar("form_id").notNull().references(() => forms.id, { onDelete: "cascade" }),
+  payloadJson: jsonb("payload_json").notNull().default({}),
+  ipHash: text("ip_hash"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertFormSubmissionSchema = createInsertSchema(formSubmissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertFormSubmission = z.infer<typeof insertFormSubmissionSchema>;
+export type FormSubmission = typeof formSubmissions.$inferSelect;

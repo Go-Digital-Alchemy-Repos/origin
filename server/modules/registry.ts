@@ -10,6 +10,7 @@ import { createCmsPagesModule } from "./cmsPages";
 import { createCmsCollectionsModule } from "./cmsCollections";
 import { createSiteThemeModule } from "./siteTheme";
 import { createCmsMenusModule } from "./cmsMenus";
+import { createFormsModule } from "./forms";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -25,6 +26,7 @@ export function registerAllModules(): Router {
   api.use(createCmsCollectionsModule());
   api.use(createSiteThemeModule());
   api.use(createCmsMenusModule());
+  api.use(createFormsModule());
 
   return api;
 }
