@@ -45,11 +45,25 @@ export const auth = betterAuth({
       },
     },
   },
+  trustedOrigins: getTrustedOrigins(),
   advanced: {
     cookiePrefix: "origin",
     useSecureCookies: process.env.NODE_ENV === "production",
   },
 });
+
+function getTrustedOrigins(): string[] {
+  const origins: string[] = ["https://originapp.ai", "https://www.originapp.ai"];
+  if (process.env.REPLIT_DOMAINS) {
+    for (const domain of process.env.REPLIT_DOMAINS.split(",")) {
+      origins.push(`https://${domain}`);
+    }
+  }
+  if (process.env.NODE_ENV !== "production") {
+    origins.push(`http://localhost:${process.env.PORT || 5000}`);
+  }
+  return origins;
+}
 
 function getBaseUrl(): string {
   if (process.env.REPLIT_DOMAINS) {
