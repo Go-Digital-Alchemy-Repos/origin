@@ -20,6 +20,7 @@ declare global {
 const SUBDOMAIN_SUFFIX = ".originapp.ai";
 
 export function isPublicSiteRequest(hostname: string): boolean {
+  if (hostname === "originapp.ai" || hostname === "www.originapp.ai") return false;
   if (hostname.endsWith(SUBDOMAIN_SUFFIX)) return true;
   if (hostname === "localhost" || hostname === "127.0.0.1") return false;
   if (hostname.endsWith(".replit.dev") || hostname.endsWith(".replit.app")) return false;
