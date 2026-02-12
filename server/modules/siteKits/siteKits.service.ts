@@ -145,6 +145,9 @@ class SiteKitsService {
   }
 
   async installToWorkspace(siteKitId: string, workspaceId: string, siteId: string) {
+    const kit = await this.getById(siteKitId);
+    if (kit.status !== "published") throw new ValidationError("Only published kits can be installed");
+
     const manifest = await this.getKitManifest(siteKitId);
 
     const results = {
@@ -155,25 +158,22 @@ class SiteKitsService {
       starterContentCreated: 0,
     };
 
-    for (const asset of manifest.assets["page_template"] || []) {
-      results.pagesCreated++;
-    }
-
-    for (const asset of manifest.assets["section_preset"] || []) {
-      results.sectionsApplied++;
-    }
-
-    for (const asset of manifest.assets["collection_schema"] || []) {
-      results.collectionsCreated++;
-    }
-
-    if ((manifest.assets["theme_preset"] || []).length > 0) {
+    const themeAssets = manifest.assets["theme_preset"] || [];
+    if (themeAssets.length > 0) {
       results.themeApplied = true;
     }
 
-    for (const asset of manifest.assets["starter_content"] || []) {
-      results.starterContentCreated++;
-    }
+    const pageAssets = manifest.assets["page_template"] || [];
+    results.pagesCreated = pageAssets.length;
+
+    const sectionAssets = manifest.assets["section_preset"] || [];
+    results.sectionsApplied = sectionAssets.length;
+
+    const collectionAssets = manifest.assets["collection_schema"] || [];
+    results.collectionsCreated = collectionAssets.length;
+
+    const contentAssets = manifest.assets["starter_content"] || [];
+    results.starterContentCreated = contentAssets.length;
 
     return {
       siteKitId,
