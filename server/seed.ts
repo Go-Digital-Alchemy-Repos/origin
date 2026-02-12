@@ -412,6 +412,50 @@ See /docs/APP_SHELL_NAV.md for full navigation reference.`,
     sortOrder: 8,
     isPublished: true,
   },
+  {
+    title: "Billing & Stripe Integration",
+    slug: "billing-stripe",
+    content: `ORIGIN uses Stripe for subscription billing with a hybrid pricing model.
+
+## Pricing Model
+
+- **Starter** ($29/mo) — Page builder, media library, basic SEO. 1 site included.
+- **Pro** ($79/mo + $19/site) — Adds analytics, forms, blog engine. Up to 5 sites.
+- **Enterprise** ($199/mo + $9/site) — Full feature access. Unlimited sites.
+
+## Architecture
+
+Webhooks are the source of truth for subscription state. The billing module handles:
+
+- **Checkout Sessions** — Stripe Checkout for subscription purchase
+- **Customer Portal** — Self-serve plan changes, payment updates, cancellation
+- **Webhook Handler** — Processes Stripe events and updates local DB
+
+## Key Flows
+
+1. User selects a plan on /app/billing
+2. Backend creates a Stripe Checkout Session
+3. User completes payment on Stripe
+4. Webhook fires and updates subscription + entitlements
+5. User manages billing via Stripe Customer Portal
+
+## Environment Variables
+
+Required: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, and price IDs for each plan.
+
+## Database
+
+- stripe_customers — Links workspaces to Stripe customer IDs
+- subscriptions — Tracks subscription status, plan, site quantity, billing period
+- entitlements — Feature flags and limits derived from the subscription plan
+
+See /docs/BILLING_STRIPE.md for complete API reference and setup guide.`,
+    category: "guides",
+    type: "developer",
+    tags: ["billing", "stripe", "subscriptions", "payments", "plans"],
+    sortOrder: 9,
+    isPublished: true,
+  },
 ];
 
 const seedModules = [

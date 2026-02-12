@@ -66,6 +66,7 @@ const clientSecondaryNav: NavItem[] = [
 ];
 
 const clientBottomNav: NavItem[] = [
+  { title: "Billing", href: "/app/billing", icon: CreditCard },
   { title: "Settings", href: "/app/settings", icon: Settings },
   { title: "Help & Resources", href: "/app/help", icon: HelpCircle },
 ];

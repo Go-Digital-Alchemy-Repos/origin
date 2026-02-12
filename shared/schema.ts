@@ -196,6 +196,73 @@ export const insertModuleSchema = createInsertSchema(originModules).omit({
 export type InsertModule = z.infer<typeof insertModuleSchema>;
 export type OriginModule = typeof originModules.$inferSelect;
 
+export const stripeCustomers = pgTable("stripe_customers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }).unique(),
+  stripeCustomerId: text("stripe_customer_id").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertStripeCustomerSchema = createInsertSchema(stripeCustomers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertStripeCustomer = z.infer<typeof insertStripeCustomerSchema>;
+export type StripeCustomer = typeof stripeCustomers.$inferSelect;
+
+export const subscriptionStatusEnum = z.enum([
+  "active",
+  "past_due",
+  "canceled",
+  "incomplete",
+  "incomplete_expired",
+  "trialing",
+  "unpaid",
+  "paused",
+]);
+
+export type SubscriptionStatus = z.infer<typeof subscriptionStatusEnum>;
+
+export const subscriptions = pgTable("subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }).unique(),
+  stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
+  status: text("status").notNull().default("incomplete"),
+  plan: text("plan").notNull().default("starter"),
+  siteQuantity: integer("site_quantity").notNull().default(1),
+  currentPeriodStart: timestamp("current_period_start"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSubscriptionSchema = createInsertSchema(subscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSubscription = z.infer<typeof insertSubscriptionSchema>;
+export type Subscription = typeof subscriptions.$inferSelect;
+
+export const entitlements = pgTable("entitlements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }).unique(),
+  features: jsonb("features").notNull().default(sql`'[]'::jsonb`),
+  limits: jsonb("limits").notNull().default(sql`'{}'::jsonb`),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertEntitlementSchema = createInsertSchema(entitlements).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertEntitlement = z.infer<typeof insertEntitlementSchema>;
+export type Entitlement = typeof entitlements.$inferSelect;
+
 export const docCategoryEnum = z.enum([
   "getting-started",
   "architecture",

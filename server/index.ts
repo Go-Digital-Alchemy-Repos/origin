@@ -4,6 +4,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth";
+import { createBillingWebhookModule } from "./modules/billing";
 
 const app = express();
 const httpServer = createServer(app);
@@ -15,6 +16,11 @@ declare module "http" {
 }
 
 app.all("/api/auth/{*splat}", toNodeHandler(auth));
+
+app.use("/api/webhooks", express.raw({ type: "application/json" }), (req, _res, next) => {
+  req.rawBody = req.body;
+  next();
+}, createBillingWebhookModule());
 
 app.use(
   express.json({

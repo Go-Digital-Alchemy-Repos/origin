@@ -59,6 +59,7 @@ server/
     docs/              # Documentation CRUD module
     modules/           # Platform modules module
     auth/              # Auth/workspace routes module
+    billing/           # Stripe billing module (checkout, portal, webhooks)
 
 shared/
   schema.ts            # Drizzle schema + Zod types for all entities
@@ -72,6 +73,7 @@ docs/
   AUTH_BETTERAUTH.md         # BetterAuth setup and usage
   TENANCY_AND_RBAC.md        # Tenancy model and RBAC docs
   APP_SHELL_NAV.md           # App shell navigation and role gating
+  BILLING_STRIPE.md          # Stripe billing setup, products, webhook events
 ```
 
 ## Database Tables
@@ -86,6 +88,9 @@ docs/
 - `audit_log` — Auth and workspace event audit trail
 - `doc_entries` — In-app documentation
 - `origin_modules` — Platform module registry
+- `stripe_customers` — Workspace-to-Stripe customer mapping
+- `subscriptions` — Subscription state (webhook-driven)
+- `entitlements` — Feature flags and limits per workspace
 
 ## Key Patterns
 
@@ -134,10 +139,21 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - SUPER_ADMIN: `admin@digitalalchemy.dev` / `OriginAdmin2026!`
 - Demo workspace: "Digital Alchemy" (enterprise plan)
 - Demo site: "Demo Site" (published)
-- 9 doc entries (including auth/tenancy/nav docs)
+- 10 doc entries (including auth/tenancy/nav/billing docs)
 - 12 platform modules
 
 ## Recent Changes
+
+- 2026-02-12: Stripe billing foundation
+  - Added stripe_customers, subscriptions, entitlements DB tables
+  - Created billing module: checkout sessions, customer portal, webhook handler
+  - Webhook signature verification with raw body handling
+  - Hybrid pricing: base plan + per-site quantity line items
+  - Entitlements auto-updated on webhook events (features + limits)
+  - Built billing page UI with plan cards, subscription status, manage button
+  - Added Billing nav item to client workspace sidebar
+  - Created BILLING_STRIPE.md docs and seeded billing doc entry
+  - Non-destructive: existing data preserved
 
 - 2026-02-12: App shell with dual-mode navigation
   - Built dual-mode sidebar: Client Workspace view + Platform Studio view

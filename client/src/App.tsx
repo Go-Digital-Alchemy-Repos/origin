@@ -40,6 +40,7 @@ import AnalyticsPage from "@/pages/analytics";
 import SettingsPage from "@/pages/settings";
 import UsersAdminPage from "@/pages/users-admin";
 import StubPage from "@/pages/stub";
+import BillingPage from "@/pages/billing";
 
 function AppRouter() {
   return (
@@ -70,7 +71,8 @@ function AppRouter() {
       <Route path="/app/studio/marketplace">{() => <StubPage title="Marketplace Catalog" description="Manage the marketplace catalog. Review, approve, and publish modules and themes." icon="store" studio />}</Route>
       <Route path="/app/studio/components">{() => <StubPage title="Component Registry" description="Global component registry. Manage design tokens, shared components, and theme definitions." icon="blocks" studio />}</Route>
       <Route path="/app/studio/status">{() => <StubPage title="System Status" description="Platform health monitoring. Uptime, performance metrics, and service status." icon="activity" studio />}</Route>
-      <Route path="/app/studio/billing">{() => <StubPage title="Billing & Plans" description="Manage subscription plans, billing cycles, and payment methods across workspaces." icon="credit-card" studio />}</Route>
+      <Route path="/app/billing" component={BillingPage} />
+      <Route path="/app/studio/billing" component={BillingPage} />
       <Route path="/app/studio/audit">{() => <StubPage title="Audit Logs" description="Complete audit trail. Track user actions, system events, and security logs." icon="clipboard-list" studio />}</Route>
       <Route component={NotFound} />
     </Switch>

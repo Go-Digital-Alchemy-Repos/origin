@@ -3,6 +3,7 @@ import { createHealthModule } from "./health";
 import { createDocsModule } from "./docs";
 import { createModulesModule } from "./modules";
 import { createAuthModule } from "./auth";
+import { createBillingModule } from "./billing";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -11,6 +12,7 @@ export function registerAllModules(): Router {
   api.use(createDocsModule());
   api.use(createModulesModule());
   api.use(createAuthModule());
+  api.use(createBillingModule());
 
   return api;
 }
