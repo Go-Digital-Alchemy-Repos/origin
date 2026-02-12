@@ -1259,6 +1259,95 @@ You can also copy an embed code using the **Embed** button in the form editor.`,
     sortOrder: 21,
     isPublished: true,
   },
+  {
+    title: "Redirects System",
+    slug: "redirects-system",
+    content: `ORIGIN's Redirect Manager provides SEO-safe URL redirection with bulk import and migration support.
+
+## Architecture
+
+Redirects are scoped per site and evaluated early in public routing—before page resolution.
+
+### Tables
+- \`redirects\` — Active redirect rules (from_path, to_url, code 301/302)
+- \`redirect_suggestions\` — Suggested redirects from importers (e.g., WordPress migration)
+
+### Path Normalization
+All \`from_path\` values are normalized: leading slash ensured, trailing slashes stripped.
+
+## API Endpoints
+
+### Authenticated (require auth + workspace context)
+- GET /api/cms/sites/:siteId/redirects — list all redirects
+- POST /api/cms/sites/:siteId/redirects — create redirect
+- PATCH /api/cms/redirects/:redirectId — update redirect
+- DELETE /api/cms/redirects/:redirectId — delete redirect
+- POST /api/cms/sites/:siteId/redirects/import — bulk import from CSV
+- GET /api/cms/sites/:siteId/redirect-suggestions — list suggestions
+- POST /api/cms/redirect-suggestions/:id/accept — accept suggestion → create redirect
+- DELETE /api/cms/redirect-suggestions/:id — dismiss suggestion
+
+### CSV Import Format
+\`\`\`
+from_path, to_url, code
+/old-page, /new-page, 301
+/blog/old, https://example.com/new, 302
+\`\`\`
+Header row is auto-detected and skipped. Max 1000 rows per import.
+
+## Public Site Integration
+
+Redirects are checked before page resolution in the public site router. When a matching \`from_path\` is found, the server responds with the configured status code (301/302).`,
+    category: "architecture",
+    type: "developer",
+    tags: ["redirects", "seo", "urls", "301", "migration"],
+    sortOrder: 27,
+    isPublished: true,
+  },
+  {
+    title: "Managing URL Redirects",
+    slug: "help-redirects",
+    content: `Set up URL redirects to ensure visitors and search engines find your content at its new location.
+
+## Adding a Redirect
+
+1. Go to **Redirects** in the sidebar
+2. Click **Add Redirect**
+3. Enter the old path (e.g., \`/old-page\`)
+4. Enter the new destination (e.g., \`/new-page\` or a full URL)
+5. Choose the redirect type:
+   - **301 Permanent** — tells search engines the page has moved permanently (best for SEO)
+   - **302 Temporary** — tells search engines the move is temporary
+
+## Editing or Deleting Redirects
+
+Click the **pencil** icon to edit or the **trash** icon to delete a redirect from the table.
+
+## Importing from CSV
+
+If you have many redirects to add:
+1. Click **Import CSV**
+2. Upload a CSV file or paste the content
+3. Format: \`from_path, to_url, code\`
+4. The code column is optional (defaults to 301)
+5. Duplicate paths are automatically skipped
+
+## Suggested Redirects
+
+When you import content from another platform (like WordPress), ORIGIN may suggest redirects for renamed or moved pages. You can accept or dismiss each suggestion.
+
+## Best Practices
+
+- Use **301** redirects for permanent URL changes to preserve SEO value
+- Use **302** redirects for temporary changes (e.g., A/B testing)
+- Avoid redirect chains (A → B → C); redirect directly from A → C
+- Review redirects periodically to remove ones that are no longer needed`,
+    category: "help",
+    type: "help",
+    tags: ["redirects", "seo", "urls", "csv-import", "migration"],
+    sortOrder: 22,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [

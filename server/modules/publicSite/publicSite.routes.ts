@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import { publicSiteService, type ResolvedSite } from "./publicSite.service";
 import { renderPublicPage, render404Page } from "./publicSite.renderer";
 import { setCacheHeaders, setNoCacheHeaders } from "./publicSite.cache";
+import { redirectsService } from "../redirects/redirects.service";
 import { log } from "../../index";
 
 declare global {
@@ -51,6 +52,16 @@ export function publicSiteRoutes(): Router {
     const site = req.publicSite;
     if (!site) {
       return res.status(404).send(render404Page("ORIGIN"));
+    }
+
+    try {
+      const requestPath = req.path || "/";
+      const redirect = await redirectsService.findRedirectByPath(site.id, requestPath);
+      if (redirect) {
+        return res.redirect(redirect.code, redirect.toUrl);
+      }
+    } catch (err) {
+      log(`Redirect lookup error: ${err}`, "public");
     }
 
     let pageSlug = req.params[0] || req.path.replace(/^\/+/, "") || "";

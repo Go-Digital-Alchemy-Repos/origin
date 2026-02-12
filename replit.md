@@ -57,6 +57,10 @@ The frontend utilizes React 18 with Tailwind CSS and shadcn/ui for a modern, com
 -   `/api/cms/public/forms/:formId/definition` — Public form definition
 -   `/api/public-preview/:siteSlug` — Public site preview (dev testing)
 -   `<slug>.originapp.ai/*` — Public site rendering (production, hostname-based)
+-   `/app/redirects` — Redirects manager
+-   `/api/cms/sites/:siteId/redirects` — Redirects CRUD
+-   `/api/cms/sites/:siteId/redirects/import` — CSV bulk import
+-   `/api/cms/sites/:siteId/redirect-suggestions` — Migration suggestions
 
 ## Database Tables
 
@@ -71,6 +75,8 @@ The frontend utilizes React 18 with Tailwind CSS and shadcn/ui for a modern, com
 -   `collection_item_revisions` — Revision history for items
 -   `forms` — Form definitions with fields_json + settings_json (workspace + site scoped)
 -   `form_submissions` — Submission payloads with IP hash + user agent
+-   `redirects` — URL redirect rules per site (from_path, to_url, code 301/302)
+-   `redirect_suggestions` — Suggested redirects from importers (e.g., WP migration)
 
 ## Server Modules
 
@@ -80,6 +86,7 @@ Located at `server/modules/`:
 -   `cmsCollections/` — Collections CRUD + items + revisions
 -   `cmsMenus/` — Navigation menus CRUD + items + reorder + slot assignment
 -   `forms/` — Forms CRUD + public submit + definition endpoint + submissions
+-   `redirects/` — Redirect rules CRUD + CSV import + suggestions + public routing integration
 -   `publicSite/` — Public site rendering, host resolver, cache headers + purge
 -   `auth/` — Auth/workspace routes
 -   `billing/` — Stripe billing
@@ -90,6 +97,16 @@ Located at `server/modules/`:
 -   `modules/` — Platform modules
 
 ## Recent Changes
+
+- 2026-02-12: Redirects system
+  - Added redirects + redirect_suggestions DB tables
+  - Created redirects server module (service, routes) with full CRUD + CSV bulk import
+  - Redirect resolution integrated early in public site routing (before page lookup)
+  - Migration hook: redirect_suggestions table for WP importer (accept/dismiss workflow)
+  - Built redirects UI page at /app/redirects with table view, add/edit dialog, CSV import
+  - Added Redirects nav item in sidebar
+  - Created docs/REDIRECTS_SYSTEM.md documentation
+  - Seeded 2 doc entries (developer + help)
 
 - 2026-02-12: Forms system (Gravity Forms-style)
   - Added forms + form_submissions DB tables with JSONB fields for flexible config

@@ -25,6 +25,7 @@ import {
   Building2,
   Wrench,
   Palette,
+  ArrowRightLeft,
 } from "lucide-react";
 import {
   Sidebar,
@@ -59,6 +60,7 @@ const clientNav: NavItem[] = [
   { title: "Media", href: "/app/media", icon: Image },
   { title: "Forms", href: "/app/forms", icon: ClipboardList },
   { title: "Menus", href: "/app/menus", icon: MenuIcon },
+  { title: "Redirects", href: "/app/redirects", icon: ArrowRightLeft },
   { title: "Theme", href: "/app/sites/theme", icon: Palette },
 ];
 

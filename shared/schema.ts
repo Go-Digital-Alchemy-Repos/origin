@@ -652,3 +652,37 @@ export const insertFormSubmissionSchema = createInsertSchema(formSubmissions).om
 
 export type InsertFormSubmission = z.infer<typeof insertFormSubmissionSchema>;
 export type FormSubmission = typeof formSubmissions.$inferSelect;
+
+export const redirects = pgTable("redirects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  fromPath: text("from_path").notNull(),
+  toUrl: text("to_url").notNull(),
+  code: integer("code").notNull().default(301),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRedirectSchema = createInsertSchema(redirects).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertRedirect = z.infer<typeof insertRedirectSchema>;
+export type Redirect = typeof redirects.$inferSelect;
+
+export const redirectSuggestions = pgTable("redirect_suggestions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  fromPath: text("from_path").notNull(),
+  toUrl: text("to_url").notNull(),
+  source: text("source").notNull().default("wp_import"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertRedirectSuggestionSchema = createInsertSchema(redirectSuggestions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertRedirectSuggestion = z.infer<typeof insertRedirectSuggestionSchema>;
+export type RedirectSuggestion = typeof redirectSuggestions.$inferSelect;
