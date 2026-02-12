@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import logoSrc from "@assets/Originsymbol_1770860673402.png";
 
 interface OriginLogoProps {
   size?: "sm" | "md" | "lg";
@@ -17,17 +18,11 @@ export function OriginLogo({ size = "md", variant = "full", className }: OriginL
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <div
-        className={cn(
-          s.icon,
-          "rounded-md flex items-center justify-center font-bold text-white"
-        )}
-        style={{
-          background: "linear-gradient(135deg, #0f172a 0%, #1e40af 50%, #3b82f6 100%)",
-        }}
-      >
-        <span className="text-xs font-black tracking-tighter">O</span>
-      </div>
+      <img
+        src={logoSrc}
+        alt="ORIGIN"
+        className={cn(s.icon, "object-contain")}
+      />
       {variant === "full" && (
         <span className={cn(s.text, "font-bold tracking-tight text-foreground")}>
           ORIGIN
