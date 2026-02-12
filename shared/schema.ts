@@ -524,6 +524,53 @@ export const insertSiteThemeSchema = createInsertSchema(siteThemes).omit({
 export type InsertSiteTheme = z.infer<typeof insertSiteThemeSchema>;
 export type SiteTheme = typeof siteThemes.$inferSelect;
 
+export const menuSlotEnum = z.enum(["header", "footer"]);
+export type MenuSlot = z.infer<typeof menuSlotEnum>;
+
+export const menuItemTypeEnum = z.enum(["page", "collection_list", "collection_item", "external_url"]);
+export type MenuItemType = z.infer<typeof menuItemTypeEnum>;
+
+export const menus = pgTable("menus", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slot: text("slot"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMenuSchema = createInsertSchema(menus).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMenu = z.infer<typeof insertMenuSchema>;
+export type Menu = typeof menus.$inferSelect;
+
+export const menuItems = pgTable("menu_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  menuId: varchar("menu_id").notNull().references(() => menus.id, { onDelete: "cascade" }),
+  parentId: varchar("parent_id"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  type: text("type").notNull().default("page"),
+  label: text("label").notNull(),
+  target: text("target"),
+  openInNewTab: boolean("open_in_new_tab").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMenuItemSchema = createInsertSchema(menuItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMenuItem = z.infer<typeof insertMenuItemSchema>;
+export type MenuItem = typeof menuItems.$inferSelect;
+
 export const siteDomains = pgTable("site_domains", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }),
