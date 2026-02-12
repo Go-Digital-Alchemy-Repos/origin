@@ -1,0 +1,185 @@
+You are working in the ORIGIN codebase. Create the first 3 “Onboarding Eligible” Site Kits and wire them into the onboarding flow and marketplace catalog.
+
+HARD REQUIREMENTS
+- NON-DESTRUCTIVE: do not remove existing features. Add new files + minimal wiring.
+- Must use the existing ORIGIN design tokens/primitives and the new EditorShell system for previews where appropriate.
+- Site Kits must be safe: installing a kit must NOT overwrite existing pages/content; it should create new pages/templates/sections unless user explicitly applies changes.
+- Site Kits must be Marketplace items with flexible billing rules (free/trial/paid) controllable from Platform Studio.
+- Must update BOTH: Developer Docs Library + Client Resource Docs.
+
+CONTEXT
+We already have:
+- Marketplace framework + installs + preview sessions
+- Platform Studio
+- Pages + builder (EditorShell)
+- Themes (site tokens + layout presets)
+- Menus
+- Forms
+- SEO defaults system
+- Onboarding wizard step “Choose Site Kit”
+
+GOAL
+Create 3 premium starter Site Kits (high quality, modern, clean SaaS style) that cover common agency client categories:
+1) Contractor / Home Services
+2) Professional Services
+3) Restaurant / Hospitality
+
+Each kit must include:
+- Theme preset: light + dark tokens + layout presets (header/footer styles)
+- Pages (created as ORIGIN Pages with builder JSON):
+  - Home
+  - About
+  - Services (or Menu for restaurant)
+  - Contact
+- Menus:
+  - Header menu (Home/About/Services(or Menu)/Contact)
+  - Footer menu (Contact + Privacy placeholder)
+- Forms:
+  - Contact form (prebuilt) and embedded into Contact page
+- SEO defaults:
+  - site-level defaults (title suffix, default OG image placeholder, robots policy)
+  - page-level SEO fields populated with reasonable placeholders
+- Sections:
+  - 8–12 polished section presets per kit (hero variants, feature/service grids, testimonials, CTA, FAQ, gallery, map/location, etc.)
+- Marketplace previews:
+  - Provide preview thumbnails and a “Preview Kit” experience using EditorShell canvas or a hosted preview route that uses the kit’s theme and page JSON.
+
+BILLING / PRICING MODEL (FLEXIBLE)
+Implement billing config on the marketplace item so each kit can be:
+- free
+- trial
+- one-time
+- subscription add-on
+This must be editable later in Platform Studio WITHOUT code changes.
+
+Add fields (or ensure they exist) on marketplace_items metadata:
+- is_onboarding_eligible (boolean)
+- is_featured (boolean)
+- billing_type ("free" | "trial" | "one_time" | "subscription")
+- trial_days (optional)
+- stripe_price_id (optional)
+- entitlement_key (optional, usually null for kits)
+- display_badge (e.g. "Free", "Included", "Premium", "Trial")
+
+INITIAL SETTINGS (for now)
+Set all three kits to:
+- is_onboarding_eligible = true
+- is_featured = true
+- billing_type = "free" (BUT must be editable later in Platform Studio)
+
+IMPLEMENTATION STEPS
+
+STEP 1 — Data model + catalog wiring
+1) Ensure Site Kits exist as first-class records in Platform Studio:
+- site_kits table (name, version, status, metadata)
+- site_kit_assets table (references theme preset, pages, sections, menus, forms)
+2) Ensure a marketplace_items entry exists per kit with type="site_kit" and links to site_kits.id.
+
+STEP 2 — Create the three Site Kits
+For each kit, create:
+A) Theme preset (light/dark tokens + layout presets)
+B) Section preset pack (8–12 presets) using global component registry
+C) Pages (builder JSON) that use the section presets
+D) Menus wired to pages
+E) Contact form wired to Contact page
+F) SEO defaults and per-page SEO fields
+
+Kits:
+
+1) "ORIGIN Starter Kit — Contractor / Home Services"
+Sections recommended:
+- Hero: “Fast, reliable service in {City}”
+- Services grid (3–6)
+- Before/After gallery section (placeholder images)
+- Testimonials
+- Service area / map section
+- FAQ (with schema support later)
+- CTA band “Request a Quote”
+- Contact form section
+
+2) "ORIGIN Starter Kit — Professional Services"
+Sections recommended:
+- Hero + credibility highlights
+- “What we do” services list
+- Team/leadership section
+- Case studies highlights
+- Testimonials
+- FAQ
+- CTA “Book a Consultation”
+- Contact form section
+
+3) "ORIGIN Starter Kit — Restaurant / Hospitality"
+Sections recommended:
+- Hero with reservation CTA
+- Menu highlight sections (categories)
+- Gallery
+- Hours + location
+- Testimonials
+- Events/announcements (simple)
+- CTA “Order / Reserve”
+- Contact form / inquiries
+
+All page copy can be placeholder but should be polished and realistic.
+
+STEP 3 — Installation behavior
+Implement a safe “Install Site Kit” handler that:
+- Creates pages if they do not exist (namespaced slugs like home/about/services/contact)
+- Applies theme preset ONLY if user chooses “Apply Theme” (respect existing Theme Preview + Apply flow)
+- Adds section presets to the site’s available presets library (site-scoped list referencing global registry presets)
+- Creates menus if missing
+- Creates contact form if missing
+- Does NOT overwrite existing pages; if slug conflict exists, create a suffixed slug and notify user
+
+STEP 4 — Onboarding integration
+Update onboarding “Choose Site Kit” step to:
+- query marketplace_items where type="site_kit" AND metadata.is_onboarding_eligible = true AND status="published"
+- show badge based on billing_type/display_badge
+- allow Preview
+- allow Install (free) or Purchase (if paid in future)
+- after install, advance wizard step and open EditorShell on Home page
+
+STEP 5 — Marketplace UI integration
+In Marketplace:
+- add category "Site Kits"
+- list these 3 kits with thumbnails, description, preview, install/purchase controls
+
+STEP 6 — Platform Studio management
+In Platform Studio:
+- Site Kits manager should allow:
+  - editing metadata (description, tags, industry)
+  - toggling is_onboarding_eligible
+  - toggling billing_type (free/trial/paid) and setting trial_days/stripe_price_id
+  - publishing/deprecating the kit
+  - version bump with changelog
+- Ensure changes reflect in Marketplace without redeploy.
+
+STEP 7 — Preview system
+Implement “Preview Site Kit” that:
+- does NOT modify the user’s site
+- renders a preview site/page using:
+  - kit theme tokens
+  - kit page JSON
+- Use EditorShell preview mode if it exists, otherwise add a simple preview route/page.
+
+STEP 8 — Documentation
+Developer docs:
+- /docs/SITE_KITS_STARTER_PACK.md
+  - kit composition structure
+  - install behavior (non-destructive rules)
+  - how to add a new kit
+  - how pricing/billing toggles work
+Resource docs:
+- Add client-facing entries:
+  - “Choosing a Site Kit”
+  - “Installing a Site Kit safely”
+  - “Previewing themes and kits”
+Add in-app Docs Library entries for both.
+
+OUTPUT REQUIREMENTS
+At the end, provide:
+- list of created/modified files
+- DB tables/columns added
+- routes/endpoints added
+- where to see the 3 kits in Platform Studio and Marketplace
+- how to test onboarding: create site → choose kit → install → open EditorShell → publish
+- TODO recommendations (short)

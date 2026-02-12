@@ -888,3 +888,53 @@ export const insertMigrationLogSchema = createInsertSchema(migrationLogs).omit({
 
 export type InsertMigrationLog = z.infer<typeof insertMigrationLogSchema>;
 export type MigrationLog = typeof migrationLogs.$inferSelect;
+
+export const wizardStepEnum = z.enum([
+  "welcome",
+  "site",
+  "site-kit",
+  "editor",
+  "publish",
+  "completed",
+]);
+export type WizardStep = z.infer<typeof wizardStepEnum>;
+
+export const onboardingChecklistSchema = z.object({
+  created_first_site: z.boolean().default(false),
+  installed_site_kit: z.boolean().default(false),
+  edited_first_page: z.boolean().default(false),
+  published_first_page: z.boolean().default(false),
+  connected_custom_domain: z.boolean().default(false),
+  created_first_form: z.boolean().default(false),
+  created_first_collection: z.boolean().default(false),
+  created_first_blog_post: z.boolean().default(false),
+  installed_marketplace_item: z.boolean().default(false),
+  invited_team_member: z.boolean().default(false),
+  enabled_crm: z.boolean().default(false),
+  created_first_client_site: z.boolean().default(false),
+  opened_platform_studio: z.boolean().default(false),
+  started_wp_import: z.boolean().default(false),
+});
+export type OnboardingChecklist = z.infer<typeof onboardingChecklistSchema>;
+
+export const workspaceOnboarding = pgTable("workspace_onboarding", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }).unique(),
+  wizardCompleted: boolean("wizard_completed").notNull().default(false),
+  wizardStep: text("wizard_step").notNull().default("welcome"),
+  checklistJson: jsonb("checklist_json").notNull().default(sql`'{}'::jsonb`),
+  firstSiteId: varchar("first_site_id"),
+  firstPublishedAt: timestamp("first_published_at"),
+  dismissed: boolean("dismissed").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertWorkspaceOnboardingSchema = createInsertSchema(workspaceOnboarding).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertWorkspaceOnboarding = z.infer<typeof insertWorkspaceOnboardingSchema>;
+export type WorkspaceOnboarding = typeof workspaceOnboarding.$inferSelect;

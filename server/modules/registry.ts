@@ -19,6 +19,7 @@ import { createSiteKitsModule } from "./siteKits";
 import { createCrmModule } from "./apps/crm";
 import { createMigrationModule } from "./migration";
 import { createAiCopilotModule } from "./aiCopilot";
+import { createOnboardingModule } from "./onboarding";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -43,6 +44,7 @@ export function registerAllModules(): Router {
   api.use(createCrmModule());
   api.use(createMigrationModule());
   api.use(createAiCopilotModule());
+  api.use(createOnboardingModule());
 
   return api;
 }

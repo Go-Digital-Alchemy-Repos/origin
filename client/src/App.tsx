@@ -60,6 +60,7 @@ import FormsPage from "@/pages/forms";
 import RedirectsPage from "@/pages/redirects";
 import SiteSeoPage from "@/pages/site-seo";
 import BlogPage from "@/pages/blog";
+import OnboardingPage from "@/pages/onboarding";
 
 function AppRouter() {
   return (
@@ -250,13 +251,27 @@ function AppLayout() {
   const { data: session, isPending } = useSession();
   const [, setLocation] = useLocation();
 
+  const { data: onboarding, isLoading: onboardingLoading } = useQuery<{
+    wizardCompleted: boolean;
+    wizardStep: string;
+  }>({
+    queryKey: ["/api/onboarding/state"],
+    enabled: !!session?.user,
+  });
+
   useEffect(() => {
     if (!isPending && !session?.user) {
       setLocation("/login");
     }
   }, [isPending, session, setLocation]);
 
-  if (isPending) {
+  useEffect(() => {
+    if (onboarding && !onboarding.wizardCompleted) {
+      setLocation("/onboarding");
+    }
+  }, [onboarding, setLocation]);
+
+  if (isPending || onboardingLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -298,6 +313,10 @@ function RootRouter() {
 
   if (location.startsWith("/app")) {
     return <AppLayout />;
+  }
+
+  if (location.startsWith("/onboarding")) {
+    return <OnboardingPage />;
   }
 
   return (
