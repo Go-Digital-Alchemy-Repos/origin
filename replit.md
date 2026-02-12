@@ -33,6 +33,7 @@ client/src/
     marketing.tsx      # Public landing page (/)
     login.tsx          # Auth login/register page (/login)
     dashboard.tsx      # App dashboard (/app)
+    stub.tsx           # Generic stub page for placeholder routes
     sites.tsx          # Site management (/app/sites)
     modules.tsx        # Module browser (/app/modules)
     docs.tsx           # Docs library (/app/docs)
@@ -70,6 +71,7 @@ docs/
   API_REFERENCE.md           # API documentation
   AUTH_BETTERAUTH.md         # BetterAuth setup and usage
   TENANCY_AND_RBAC.md        # Tenancy model and RBAC docs
+  APP_SHELL_NAV.md           # App shell navigation and role gating
 ```
 
 ## Database Tables
@@ -106,10 +108,19 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - `/` — Marketing landing page (public)
 - `/login` — Authentication page (login/register)
 - `/app` — Dashboard (requires auth)
-- `/app/*` — All app pages use sidebar layout
+- `/app/*` — Client workspace pages (sidebar layout)
+- `/app/studio` — Platform Studio dashboard (SUPER_ADMIN/AGENCY_ADMIN only)
+- `/app/studio/*` — Platform Studio pages
 - `/api/auth/*` — BetterAuth endpoints
 - `/api/user/*` — User/workspace endpoints
 - `/api/*` — Other API endpoints
+
+### App Shell Navigation
+- Dual-mode sidebar: Client Workspace view + Platform Studio view
+- Mode toggle in sidebar header (only visible to SUPER_ADMIN/AGENCY_ADMIN)
+- Topbar: workspace switcher, command palette stub (Cmd+K), theme toggle, user menu
+- CRM nav item locked (requires module installation)
+- See docs/APP_SHELL_NAV.md for full nav reference
 
 ### Roles
 - SUPER_ADMIN — Platform owner (Digital Alchemy)
@@ -123,10 +134,22 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - SUPER_ADMIN: `admin@digitalalchemy.dev` / `OriginAdmin2026!`
 - Demo workspace: "Digital Alchemy" (enterprise plan)
 - Demo site: "Demo Site" (published)
-- 8 doc entries (including auth/tenancy docs)
+- 9 doc entries (including auth/tenancy/nav docs)
 - 12 platform modules
 
 ## Recent Changes
+
+- 2026-02-12: App shell with dual-mode navigation
+  - Built dual-mode sidebar: Client Workspace view + Platform Studio view
+  - Added workspace switcher dropdown in topbar
+  - Added command palette trigger stub (Cmd+K)
+  - Added user menu dropdown with profile and sign-out
+  - Created stub pages for all nav items (Pages, Collections, Blog, Media, Forms, Menus, Marketplace, CRM, Help)
+  - Created Platform Studio stubs (Platform Dashboard, Clients, Sites, Site Kits, Sections, Widgets, Apps, Marketplace Catalog, Component Registry, System Status, Billing & Plans, Audit Logs)
+  - CRM nav item locked behind module installation
+  - Mode toggle visible only to SUPER_ADMIN/AGENCY_ADMIN
+  - Created APP_SHELL_NAV.md docs and seeded doc entry
+  - Non-destructive seed: adds missing docs without overwriting existing
 
 - 2026-02-12: BetterAuth integration + tenancy foundations
   - Added BetterAuth with Drizzle adapter for email/password auth

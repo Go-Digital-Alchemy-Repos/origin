@@ -362,6 +362,56 @@ All queries are automatically scoped by workspace_id using middleware. This ensu
     sortOrder: 7,
     isPublished: true,
   },
+  {
+    title: "App Shell & Navigation",
+    slug: "app-shell-navigation",
+    content: `The ORIGIN app shell provides a dual-mode navigation system that adapts based on user role.
+
+## Navigation Modes
+
+### Client Workspace View
+The default view for all authenticated users. Provides access to content management, media, forms, marketplace, and workspace settings.
+
+Key routes: Dashboard (/app), Pages, Collections, Blog, Media, Forms, Menus, Marketplace, CRM (locked), Settings, Help & Resources.
+
+### Platform Studio View
+Available only to SUPER_ADMIN and AGENCY_ADMIN roles. Provides platform-wide administration tools.
+
+Key routes: Platform Dashboard (/app/studio), Clients, Sites, Site Kits, Sections, Widgets, Apps, Marketplace Catalog, Component Registry, Docs Library, System Status, Billing & Plans, Audit Logs.
+
+## Mode Switching
+
+Platform users see a toggle in the sidebar header between "Workspace" and "Studio" modes. The active mode is determined by the URL path.
+
+## Top Bar
+
+The top bar includes:
+- **Workspace Switcher** — Select active workspace from a dropdown
+- **Command Palette** — Search trigger (Cmd+K stub)
+- **Theme Toggle** — Light/dark mode
+- **User Menu** — Profile, settings, sign out
+
+## Role Gating
+
+| Role | Client View | Studio View |
+|------|:-----------:|:-----------:|
+| SUPER_ADMIN | Yes | Yes |
+| AGENCY_ADMIN | Yes | Yes |
+| CLIENT_ADMIN | Yes | No |
+| CLIENT_EDITOR | Yes | No |
+| CLIENT_VIEWER | Yes | No |
+
+## Locked Items
+
+CRM is gated behind module installation. Locked items appear dimmed with a lock icon.
+
+See /docs/APP_SHELL_NAV.md for full navigation reference.`,
+    category: "guides",
+    type: "developer",
+    tags: ["navigation", "sidebar", "roles", "shell", "studio"],
+    sortOrder: 8,
+    isPublished: true,
+  },
 ];
 
 const seedModules = [
@@ -567,12 +617,14 @@ async function seedDemoSite(workspaceId: string) {
 export async function seedDatabase() {
   try {
     const existingDocs = await db.select().from(docEntries);
-    if (existingDocs.length === 0) {
-      log("Seeding doc entries...", "seed");
-      await db.insert(docEntries).values(seedDocs);
-      log(`Seeded ${seedDocs.length} doc entries`, "seed");
+    const existingSlugs = new Set(existingDocs.map((d) => d.slug));
+    const newDocs = seedDocs.filter((d) => !existingSlugs.has(d.slug));
+    if (newDocs.length > 0) {
+      log(`Seeding ${newDocs.length} new doc entries...`, "seed");
+      await db.insert(docEntries).values(newDocs);
+      log(`Seeded ${newDocs.length} new doc entries`, "seed");
     } else {
-      log(`Skipping docs seed (${existingDocs.length} already exist)`, "seed");
+      log(`Skipping docs seed (all ${seedDocs.length} already exist)`, "seed");
     }
 
     const existingModules = await db.select().from(originModules);
