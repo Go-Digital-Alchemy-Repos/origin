@@ -45,10 +45,8 @@ The frontend uses React 18, Tailwind CSS, and shadcn/ui. `wouter` handles routin
 -   **Site Kits System:** Bundled site packages containing theme presets, page templates, section presets, collection schemas, and starter content. Super Admin creates/manages kits with asset-based architecture (`site_kits` + `site_kit_assets` tables). Publishing auto-creates marketplace items under "site-kit" category. Client install is non-destructive (creates new pages/content without overwriting). Draft kits can be deleted; published kits must be unpublished first. Kits require at least one theme preset and one asset to publish.
 -   **AI Copilot Context System:** Enriches AI interactions with workspace-specific data (entitlements, installed apps, site pages, collections, menus). Context builder gathers data in parallel and injects it into prompt templates. Four templates: General Assistant, Content Strategy, Lead Capture & CRM, Site Optimization. Rule-based `/suggest` endpoint works without API key. `/chat` endpoint requires `OPENAI_API_KEY`. Non-destructive (read-only context gathering).
 
--   **App Add-on System:** Compiled app modules gated by entitlements (NOT runtime plugins). `defineOriginApp()` contract in `shared/originApps/types.ts` defines app key, entitlement, nav, API paths, docs, and marketplace config. Central registry in `shared/originApps/registry.ts`. Apps aggregator in `server/modules/apps/index.ts` mounts all app modules. Generator script at `scripts/gen-app.ts` scaffolds server module, UI page, and docs. Registry endpoint at `GET /api/apps/registry`. Entitlement convention: `apps.<key>`. Current apps: CRM (core), Tickets (addon). Full spec in `docs/ORIGIN_APP_ADDON_STANDARD.md`.
-
 **Core Server Modules:**
-`siteTheme/`, `cmsPages/`, `cmsCollections/`, `cmsMenus/`, `forms/`, `redirects/`, `seo/`, `blog/`, `publicSite/`, `auth/`, `billing/`, `marketplace/`, `component-registry/`, `docs/`, `siteKits/`, `aiCopilot/`, `apps/`.
+`siteTheme/`, `cmsPages/`, `cmsCollections/`, `cmsMenus/`, `forms/`, `redirects/`, `seo/`, `blog/`, `publicSite/`, `auth/`, `billing/`, `marketplace/`, `component-registry/`, `docs/`, `siteKits/`, `aiCopilot/`.
 
 ## External Dependencies
 

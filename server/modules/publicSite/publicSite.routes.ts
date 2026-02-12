@@ -18,11 +18,9 @@ declare global {
 }
 
 const SUBDOMAIN_SUFFIX = ".originapp.ai";
-const PLATFORM_DOMAIN = "originapp.ai";
 
 export function isPublicSiteRequest(hostname: string): boolean {
   if (hostname.endsWith(SUBDOMAIN_SUFFIX)) return true;
-  if (hostname === PLATFORM_DOMAIN || hostname === `www.${PLATFORM_DOMAIN}`) return false;
   if (hostname === "localhost" || hostname === "127.0.0.1") return false;
   if (hostname.endsWith(".replit.dev") || hostname.endsWith(".replit.app")) return false;
   return true;
@@ -39,10 +37,7 @@ export function resolvePublicSiteMiddleware() {
     try {
       const site = await publicSiteService.resolveSiteByHost(hostname);
       if (!site) {
-        if (hostname.endsWith(SUBDOMAIN_SUFFIX)) {
-          return res.status(404).send(render404Page("ORIGIN"));
-        }
-        return next();
+        return res.status(404).send(render404Page("ORIGIN"));
       }
       req.publicSite = site;
       next();

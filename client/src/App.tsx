@@ -61,7 +61,6 @@ import RedirectsPage from "@/pages/redirects";
 import SiteSeoPage from "@/pages/site-seo";
 import BlogPage from "@/pages/blog";
 import OnboardingPage from "@/pages/onboarding";
-import AppTicketsPage from "@/pages/app-tickets";
 
 function AppRouter() {
   return (
@@ -90,7 +89,6 @@ function AppRouter() {
       <Route path="/app/crm/leads" component={CrmLeadsPage} />
       <Route path="/app/crm/contacts" component={CrmContactsPage} />
       <Route path="/app/crm"><Redirect to="/app/crm/leads" /></Route>
-      <Route path="/app/apps/tickets" component={AppTicketsPage} />
       <Route path="/app/help" component={HelpPage} />
       <Route path="/app/studio">{() => <StubPage title="Platform Dashboard" description="Overview of all clients, sites, and platform health across your ORIGIN instance." icon="layout-dashboard" studio />}</Route>
       <Route path="/app/studio/clients">{() => <StubPage title="Clients" description="Manage client workspaces, onboarding, and team access across the platform." icon="building-2" studio />}</Route>
