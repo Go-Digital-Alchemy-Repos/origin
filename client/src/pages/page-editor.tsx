@@ -19,6 +19,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
 import {
   ArrowLeft,
   Save,
@@ -29,6 +30,8 @@ import {
   Blocks,
   FileText,
   Code2,
+  Search,
+  Share2,
 } from "lucide-react";
 import type { BuilderContent } from "@/lib/builder/types";
 import { isBuilderContent } from "@/lib/builder/types";
@@ -48,6 +51,11 @@ export default function PageEditorPage() {
   const [contentJson, setContentJson] = useState("{}");
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
+  const [canonicalUrl, setCanonicalUrl] = useState("");
+  const [indexable, setIndexable] = useState(true);
+  const [ogTitle, setOgTitle] = useState("");
+  const [ogDescription, setOgDescription] = useState("");
+  const [ogImage, setOgImage] = useState("");
   const [dirty, setDirty] = useState(false);
   const [revisionsOpen, setRevisionsOpen] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -69,6 +77,11 @@ export default function PageEditorPage() {
       setSlug(pageData.slug);
       setSeoTitle(pageData.seoTitle || "");
       setSeoDescription(pageData.seoDescription || "");
+      setCanonicalUrl(pageData.canonicalUrl || "");
+      setIndexable(pageData.indexable ?? true);
+      setOgTitle(pageData.ogTitle || "");
+      setOgDescription(pageData.ogDescription || "");
+      setOgImage(pageData.ogImage || "");
       if (pageData.latestRevision) {
         setContentJson(JSON.stringify(pageData.latestRevision.contentJson, null, 2));
       }
@@ -94,6 +107,11 @@ export default function PageEditorPage() {
         contentJson: parsed,
         seoTitle: seoTitle || undefined,
         seoDescription: seoDescription || undefined,
+        canonicalUrl: canonicalUrl || undefined,
+        indexable,
+        ogTitle: ogTitle || undefined,
+        ogDescription: ogDescription || undefined,
+        ogImage: ogImage || undefined,
         note: "Draft save",
       });
       return res.json();
@@ -385,7 +403,10 @@ export default function PageEditorPage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">SEO</CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Search className="h-4 w-4" />
+                    Search Engine Optimization
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-1.5">
@@ -397,6 +418,10 @@ export default function PageEditorPage() {
                       placeholder="Page title for search engines"
                       data-testid="input-seo-title"
                     />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Recommended: 50-60 characters</span>
+                      <span className={seoTitle.length > 60 ? "text-destructive" : ""}>{seoTitle.length}/60</span>
+                    </div>
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="seo-description">SEO Description</Label>
@@ -408,6 +433,85 @@ export default function PageEditorPage() {
                       className="min-h-[80px]"
                       data-testid="input-seo-description"
                     />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Recommended: 150-160 characters</span>
+                      <span className={seoDescription.length > 160 ? "text-destructive" : ""}>{seoDescription.length}/160</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="canonical-url">Canonical URL</Label>
+                    <Input
+                      id="canonical-url"
+                      value={canonicalUrl}
+                      onChange={(e) => handleFieldChange(setCanonicalUrl)(e.target.value)}
+                      placeholder="https://example.com/page (leave blank for auto)"
+                      data-testid="input-canonical-url"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      If left empty, a canonical URL will be generated automatically.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="indexable">Allow search engine indexing</Label>
+                      <p className="text-xs text-muted-foreground">
+                        When off, search engines will be told not to index this page.
+                      </p>
+                    </div>
+                    <Switch
+                      id="indexable"
+                      checked={indexable}
+                      onCheckedChange={(checked) => {
+                        setIndexable(checked);
+                        setDirty(true);
+                      }}
+                      data-testid="switch-indexable"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Share2 className="h-4 w-4" />
+                    Open Graph (Social Sharing)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="og-title">OG Title</Label>
+                    <Input
+                      id="og-title"
+                      value={ogTitle}
+                      onChange={(e) => handleFieldChange(setOgTitle)(e.target.value)}
+                      placeholder="Override title shown when shared on social media"
+                      data-testid="input-og-title"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="og-description">OG Description</Label>
+                    <Textarea
+                      id="og-description"
+                      value={ogDescription}
+                      onChange={(e) => handleFieldChange(setOgDescription)(e.target.value)}
+                      placeholder="Override description shown when shared on social media"
+                      className="min-h-[80px]"
+                      data-testid="input-og-description"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="og-image">OG Image URL</Label>
+                    <Input
+                      id="og-image"
+                      value={ogImage}
+                      onChange={(e) => handleFieldChange(setOgImage)(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      data-testid="input-og-image"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Recommended size: 1200x630px. Falls back to site default if empty.
+                    </p>
                   </div>
                 </CardContent>
               </Card>

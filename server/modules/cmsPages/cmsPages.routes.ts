@@ -12,6 +12,11 @@ const createPageBody = z.object({
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   seoImage: z.string().optional(),
+  canonicalUrl: z.string().optional(),
+  indexable: z.boolean().optional(),
+  ogTitle: z.string().optional(),
+  ogDescription: z.string().optional(),
+  ogImage: z.string().optional(),
 });
 
 const updatePageBody = z.object({
@@ -22,6 +27,11 @@ const updatePageBody = z.object({
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   seoImage: z.string().optional(),
+  canonicalUrl: z.string().optional(),
+  indexable: z.boolean().optional(),
+  ogTitle: z.string().optional(),
+  ogDescription: z.string().optional(),
+  ogImage: z.string().optional(),
 });
 
 function getWorkspaceId(req: Request): string | null {

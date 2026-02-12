@@ -1348,6 +1348,102 @@ When you import content from another platform (like WordPress), ORIGIN may sugge
     sortOrder: 22,
     isPublished: true,
   },
+  {
+    title: "SEO System",
+    slug: "seo-system",
+    content: `ORIGIN's SEO system provides comprehensive search engine optimization at both page and site levels.
+
+## Architecture
+
+The SEO system consists of page-level fields and site-level defaults that work together for optimal search engine visibility.
+
+### Database Tables
+
+- \`pages\` — Extended with canonical_url, indexable, og_title, og_description, og_image columns
+- \`site_seo_settings\` — Per-site defaults (title_suffix, default_og_image, default_indexable, robots_txt)
+
+### Server Module
+
+\`server/modules/seo/\` — SEO settings CRUD with site ownership validation
+
+### API Routes
+
+- GET /api/cms/sites/:siteId/seo — get site SEO settings
+- PUT /api/cms/sites/:siteId/seo — upsert site SEO settings
+
+### Public Endpoints (served at site domain)
+
+- /sitemap.xml — auto-generated from published pages
+- /robots.txt — customizable with auto-appended sitemap reference
+
+### Page-Level SEO Fields
+
+Each page supports: seoTitle, seoDescription, canonicalUrl, indexable (boolean), ogTitle, ogDescription, ogImage.
+
+### Rendering Behavior
+
+- Title: "Page SEO Title | Site Title Suffix"
+- Canonical: explicit canonicalUrl or auto-generated from baseUrl + slug
+- Indexable: page-level overrides site default; noindex meta tag when false
+- OG tags: page ogTitle/ogDescription/ogImage → fallback to seoTitle/seoDescription → fallback to site defaults
+- Sitemap: only includes published, indexable pages with lastmod dates`,
+    category: "developer",
+    type: "developer",
+    tags: ["seo", "sitemap", "robots", "open-graph", "canonical", "meta-tags"],
+    sortOrder: 23,
+    isPublished: true,
+  },
+  {
+    title: "SEO Settings & Optimization",
+    slug: "help-seo",
+    content: `Optimize your site for search engines with ORIGIN's built-in SEO tools.
+
+## Site-Level SEO Settings
+
+Go to **SEO** in the sidebar to configure defaults that apply across your site:
+
+- **Title Suffix** — Added after every page title (e.g., "About Us | My Company")
+- **Default OG Image** — Used when sharing pages that don't have their own image
+- **Default Indexing** — Whether new pages should be indexable by default
+- **robots.txt** — Controls how search engines crawl your site
+
+## Page-Level SEO
+
+When editing a page, scroll to the SEO section to set:
+
+- **SEO Title** — Custom title for search results (aim for 50-60 characters)
+- **SEO Description** — Summary shown in search results (aim for 150-160 characters)
+- **Canonical URL** — Preferred URL for this content (leave blank for automatic)
+- **Indexable** — Toggle to control whether search engines can index this page
+
+## Social Sharing (Open Graph)
+
+Set Open Graph fields to control how your pages appear when shared on social media:
+
+- **OG Title** — Custom title for social media sharing
+- **OG Description** — Custom description for social sharing
+- **OG Image** — Image shown in social previews (recommended: 1200x630px)
+
+## Auto-Generated Files
+
+ORIGIN automatically generates and serves:
+
+- **sitemap.xml** — Lists all published pages with last modified dates
+- **robots.txt** — Your custom rules plus an automatic sitemap reference
+
+## Best Practices
+
+- Write unique, descriptive titles for each page
+- Keep descriptions concise and compelling
+- Set OG images for important pages to improve social sharing
+- Use canonical URLs to prevent duplicate content issues
+- Review the indexable setting for staging or private pages`,
+    category: "help",
+    type: "help",
+    tags: ["seo", "sitemap", "robots", "social-sharing", "open-graph"],
+    sortOrder: 23,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [

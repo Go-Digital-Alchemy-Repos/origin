@@ -101,7 +101,12 @@ export const cmsPagesService = {
 
   async updatePage(
     pageId: string,
-    data: { title?: string; slug?: string; contentJson?: unknown; seoTitle?: string; seoDescription?: string; seoImage?: string },
+    data: {
+      title?: string; slug?: string; contentJson?: unknown;
+      seoTitle?: string; seoDescription?: string; seoImage?: string;
+      canonicalUrl?: string; indexable?: boolean;
+      ogTitle?: string; ogDescription?: string; ogImage?: string;
+    },
     userId: string,
     note?: string,
   ): Promise<{ page: Page; revision: PageRevision }> {
@@ -114,6 +119,11 @@ export const cmsPagesService = {
     if (data.seoTitle !== undefined) updateFields.seoTitle = data.seoTitle;
     if (data.seoDescription !== undefined) updateFields.seoDescription = data.seoDescription;
     if (data.seoImage !== undefined) updateFields.seoImage = data.seoImage;
+    if (data.canonicalUrl !== undefined) updateFields.canonicalUrl = data.canonicalUrl;
+    if (data.indexable !== undefined) updateFields.indexable = data.indexable;
+    if (data.ogTitle !== undefined) updateFields.ogTitle = data.ogTitle;
+    if (data.ogDescription !== undefined) updateFields.ogDescription = data.ogDescription;
+    if (data.ogImage !== undefined) updateFields.ogImage = data.ogImage;
 
     const [page] = await db.update(pages).set(updateFields).where(eq(pages.id, pageId)).returning();
 

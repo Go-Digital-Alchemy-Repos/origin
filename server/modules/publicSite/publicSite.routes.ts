@@ -4,6 +4,7 @@ import { publicSiteService, type ResolvedSite } from "./publicSite.service";
 import { renderPublicPage, render404Page } from "./publicSite.renderer";
 import { setCacheHeaders, setNoCacheHeaders } from "./publicSite.cache";
 import { redirectsService } from "../redirects/redirects.service";
+import { seoService } from "../seo/seo.service";
 import { log } from "../../index";
 
 declare global {
@@ -45,8 +46,48 @@ export function resolvePublicSiteMiddleware() {
   };
 }
 
+function buildBaseUrl(req: Request, site: ResolvedSite): string {
+  const protocol = req.protocol || "https";
+  const host = req.get("host") || `${site.slug}.originapp.ai`;
+  return `${protocol}://${host}`;
+}
+
 export function publicSiteRoutes(): Router {
   const router = Router();
+
+  router.get("/sitemap.xml", async (req: Request, res: Response) => {
+    const site = req.publicSite;
+    if (!site) return res.status(404).send("Not found");
+
+    try {
+      const baseUrl = buildBaseUrl(req, site);
+      const sitePages = await seoService.getSitemapPages(site.id);
+      const xml = seoService.generateSitemapXml(baseUrl, sitePages);
+      setCacheHeaders(res, { maxAge: 3600 });
+      res.type("application/xml").send(xml);
+    } catch (err) {
+      log(`Sitemap generation error: ${err}`, "public");
+      res.status(500).send("Error generating sitemap");
+    }
+  });
+
+  router.get("/robots.txt", async (req: Request, res: Response) => {
+    const site = req.publicSite;
+    if (!site) return res.status(404).send("Not found");
+
+    try {
+      const robotsTxt = await seoService.getRobotsTxt(site.id);
+      const baseUrl = buildBaseUrl(req, site);
+      const content = robotsTxt.includes("Sitemap:")
+        ? robotsTxt
+        : `${robotsTxt}\nSitemap: ${baseUrl}/sitemap.xml\n`;
+      setCacheHeaders(res, { maxAge: 3600 });
+      res.type("text/plain").send(content);
+    } catch (err) {
+      log(`Robots.txt error: ${err}`, "public");
+      res.status(500).send("Error generating robots.txt");
+    }
+  });
 
   router.get("/*", async (req: Request, res: Response) => {
     const site = req.publicSite;
@@ -81,12 +122,13 @@ export function publicSiteRoutes(): Router {
     }
 
     try {
-      const [page, sitePages, theme, headerMenu, footerMenu] = await Promise.all([
+      const [page, sitePages, theme, headerMenu, footerMenu, seoSettings] = await Promise.all([
         publicSiteService.getPublishedPage(site.id, pageSlug),
         publicSiteService.getPublishedPages(site.id),
         publicSiteService.getSiteTheme(site.id),
         publicSiteService.getMenuBySlot(site.id, "header"),
         publicSiteService.getMenuBySlot(site.id, "footer"),
+        seoService.getSeoSettings(site.id),
       ]);
 
       if (!page) {
@@ -95,6 +137,7 @@ export function publicSiteRoutes(): Router {
       }
 
       setCacheHeaders(res, { maxAge: 60 });
+      const baseUrl = buildBaseUrl(req, site);
 
       const html = renderPublicPage({
         site: { name: site.name, slug: site.slug },
@@ -103,6 +146,12 @@ export function publicSiteRoutes(): Router {
         pages: sitePages,
         headerMenu: headerMenu ?? undefined,
         footerMenu: footerMenu ?? undefined,
+        seoDefaults: seoSettings ? {
+          titleSuffix: seoSettings.titleSuffix,
+          defaultOgImage: seoSettings.defaultOgImage,
+          defaultIndexable: seoSettings.defaultIndexable ?? true,
+        } : undefined,
+        baseUrl,
       });
 
       res.type("html").send(html);

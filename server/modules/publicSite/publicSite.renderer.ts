@@ -15,6 +15,12 @@ interface MenuData {
   items: MenuItemData[];
 }
 
+interface SeoDefaults {
+  titleSuffix?: string | null;
+  defaultOgImage?: string | null;
+  defaultIndexable?: boolean;
+}
+
 interface RenderOptions {
   site: { name: string; slug: string };
   page: PublishedPage;
@@ -22,6 +28,8 @@ interface RenderOptions {
   pages: Array<{ slug: string; title: string }>;
   headerMenu?: MenuData;
   footerMenu?: MenuData;
+  seoDefaults?: SeoDefaults;
+  baseUrl?: string;
 }
 
 function escapeHtml(str: string): string {
@@ -272,9 +280,15 @@ function renderFooterMenu(items: MenuItemData[], pages: Array<{ slug: string; ti
 }
 
 export function renderPublicPage(opts: RenderOptions): string {
-  const { site, page, pages: sitePages, headerMenu, footerMenu } = opts;
+  const { site, page, pages: sitePages, headerMenu, footerMenu, seoDefaults, baseUrl } = opts;
   const title = page.seoTitle || page.title;
   const description = page.seoDescription || "";
+  const titleSuffix = seoDefaults?.titleSuffix || site.name;
+  const ogTitle = page.ogTitle || title;
+  const ogDescription = page.ogDescription || description;
+  const ogImage = page.ogImage || page.seoImage || seoDefaults?.defaultOgImage || "";
+  const isIndexable = page.indexable !== undefined ? page.indexable : (seoDefaults?.defaultIndexable ?? true);
+  const canonicalUrl = page.canonicalUrl || (baseUrl ? `${baseUrl}/${page.slug === "home" || page.slug === "index" ? "" : page.slug}` : "");
 
   let contentHtml = "";
   const contentJson = page.contentJson as any;
@@ -316,11 +330,14 @@ export function renderPublicPage(opts: RenderOptions): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(title)} | ${escapeHtml(site.name)}</title>
+  <title>${escapeHtml(title)}${titleSuffix ? ` | ${escapeHtml(titleSuffix)}` : ""}</title>
   ${description ? `<meta name="description" content="${escapeHtml(description)}">` : ""}
-  <meta property="og:title" content="${escapeHtml(title)}">
-  ${description ? `<meta property="og:description" content="${escapeHtml(description)}">` : ""}
-  ${page.seoImage ? `<meta property="og:image" content="${escapeHtml(page.seoImage)}">` : ""}
+  ${!isIndexable ? `<meta name="robots" content="noindex, nofollow">` : ""}
+  ${canonicalUrl ? `<link rel="canonical" href="${escapeHtml(canonicalUrl)}">` : ""}
+  <meta property="og:title" content="${escapeHtml(ogTitle)}">
+  ${ogDescription ? `<meta property="og:description" content="${escapeHtml(ogDescription)}">` : ""}
+  ${ogImage ? `<meta property="og:image" content="${escapeHtml(ogImage)}">` : ""}
+  <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>

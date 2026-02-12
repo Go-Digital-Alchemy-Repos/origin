@@ -61,9 +61,12 @@ The frontend utilizes React 18 with Tailwind CSS and shadcn/ui for a modern, com
 -   `/api/cms/sites/:siteId/redirects` — Redirects CRUD
 -   `/api/cms/sites/:siteId/redirects/import` — CSV bulk import
 -   `/api/cms/sites/:siteId/redirect-suggestions` — Migration suggestions
+-   `/app/sites/seo` — Site SEO settings editor
+-   `/api/cms/sites/:siteId/seo` — SEO settings GET/PUT
 
 ## Database Tables
 
+-   `site_seo_settings` — Per-site SEO defaults (title_suffix, default_og_image, default_indexable, robots_txt)
 -   `site_themes` — Per-site theme tokens and layout presets (site_id unique FK)
 -   `site_domains` — Custom domain mappings (site_id, domain, is_primary, verified_at)
 -   `menus` — Navigation menus scoped by workspace + site, with optional slot (header/footer)
@@ -87,6 +90,7 @@ Located at `server/modules/`:
 -   `cmsMenus/` — Navigation menus CRUD + items + reorder + slot assignment
 -   `forms/` — Forms CRUD + public submit + definition endpoint + submissions
 -   `redirects/` — Redirect rules CRUD + CSV import + suggestions + public routing integration
+-   `seo/` — Site SEO settings CRUD, sitemap.xml generation, robots.txt
 -   `publicSite/` — Public site rendering, host resolver, cache headers + purge
 -   `auth/` — Auth/workspace routes
 -   `billing/` — Stripe billing
@@ -97,6 +101,18 @@ Located at `server/modules/`:
 -   `modules/` — Platform modules
 
 ## Recent Changes
+
+- 2026-02-12: SEO system
+  - Added canonical_url, indexable, og_title, og_description, og_image columns to pages table
+  - Created site_seo_settings table for site-level defaults (title_suffix, default_og_image, default_indexable, robots_txt)
+  - Created seo server module (service, routes) with CRUD + sitemap.xml + robots.txt generation
+  - Updated public site renderer with canonical links, noindex meta, OG tags, title suffix
+  - Integrated sitemap.xml and robots.txt routes into public site routing (before catch-all)
+  - Expanded page editor SEO panel with canonical URL, indexable toggle, OG fields, character counters
+  - Built Site SEO Settings UI at /app/sites/seo with title suffix, default OG image, robots.txt editor
+  - Added SEO nav item in sidebar
+  - Created docs/SEO_SYSTEM.md documentation
+  - Seeded 2 doc entries (developer + help)
 
 - 2026-02-12: Redirects system
   - Added redirects + redirect_suggestions DB tables

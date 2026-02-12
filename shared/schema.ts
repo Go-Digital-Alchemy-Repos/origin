@@ -364,6 +364,11 @@ export const pages = pgTable("pages", {
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
   seoImage: text("seo_image"),
+  canonicalUrl: text("canonical_url"),
+  indexable: boolean("indexable").notNull().default(true),
+  ogTitle: text("og_title"),
+  ogDescription: text("og_description"),
+  ogImage: text("og_image"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -686,3 +691,21 @@ export const insertRedirectSuggestionSchema = createInsertSchema(redirectSuggest
 
 export type InsertRedirectSuggestion = z.infer<typeof insertRedirectSuggestionSchema>;
 export type RedirectSuggestion = typeof redirectSuggestions.$inferSelect;
+
+export const siteSeoSettings = pgTable("site_seo_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: varchar("site_id").notNull().references(() => sites.id, { onDelete: "cascade" }).unique(),
+  titleSuffix: text("title_suffix"),
+  defaultOgImage: text("default_og_image"),
+  defaultIndexable: boolean("default_indexable").notNull().default(true),
+  robotsTxt: text("robots_txt"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSiteSeoSettingsSchema = createInsertSchema(siteSeoSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertSiteSeoSettings = z.infer<typeof insertSiteSeoSettingsSchema>;
+export type SiteSeoSettings = typeof siteSeoSettings.$inferSelect;

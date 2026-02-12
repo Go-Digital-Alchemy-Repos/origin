@@ -18,6 +18,11 @@ export interface PublishedPage {
   seoTitle: string | null;
   seoDescription: string | null;
   seoImage: string | null;
+  canonicalUrl: string | null;
+  indexable: boolean;
+  ogTitle: string | null;
+  ogDescription: string | null;
+  ogImage: string | null;
   contentJson: unknown;
   publishedAt: Date | null;
 }
@@ -90,6 +95,11 @@ export const publicSiteService = {
       seoTitle: page.seoTitle,
       seoDescription: page.seoDescription,
       seoImage: page.seoImage,
+      canonicalUrl: page.canonicalUrl,
+      indexable: page.indexable,
+      ogTitle: page.ogTitle,
+      ogDescription: page.ogDescription,
+      ogImage: page.ogImage,
       contentJson: latestRev?.contentJson ?? {},
       publishedAt: page.publishedAt,
     };

@@ -53,11 +53,13 @@ import SiteThemePage from "@/pages/site-theme";
 import MenusPage from "@/pages/menus";
 import FormsPage from "@/pages/forms";
 import RedirectsPage from "@/pages/redirects";
+import SiteSeoPage from "@/pages/site-seo";
 
 function AppRouter() {
   return (
     <Switch>
       <Route path="/app" component={DashboardPage} />
+      <Route path="/app/sites/seo" component={SiteSeoPage} />
       <Route path="/app/sites/theme" component={SiteThemePage} />
       <Route path="/app/sites" component={SitesPage} />
       <Route path="/app/modules" component={ModulesPage} />

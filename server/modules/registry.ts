@@ -12,6 +12,7 @@ import { createSiteThemeModule } from "./siteTheme";
 import { createCmsMenusModule } from "./cmsMenus";
 import { createFormsModule } from "./forms";
 import { createRedirectsModule } from "./redirects";
+import { createSeoModule } from "./seo";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -29,6 +30,7 @@ export function registerAllModules(): Router {
   api.use(createCmsMenusModule());
   api.use(createFormsModule());
   api.use(createRedirectsModule());
+  api.use(createSeoModule());
 
   return api;
 }
