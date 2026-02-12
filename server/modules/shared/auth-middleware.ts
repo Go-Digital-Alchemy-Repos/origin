@@ -3,6 +3,7 @@ import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../../auth";
 import { storage } from "../../storage";
 import type { Role } from "@shared/schema";
+import { getEntitlement } from "../billing/billing.service";
 
 declare global {
   namespace Express {
@@ -179,4 +180,35 @@ export function scopeBySite(siteId?: string) {
     throw new Error("Site ID required for scoped query");
   }
   return siteId;
+}
+
+export function requireEntitlement(featureKey: string) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    if (req.user?.role === "SUPER_ADMIN") {
+      return next();
+    }
+
+    const workspaceId = getWorkspaceId(req);
+    if (!workspaceId) {
+      return res.status(400).json({
+        error: { message: "Workspace context required to check entitlements", code: "WORKSPACE_REQUIRED" },
+      });
+    }
+
+    const ent = await getEntitlement(workspaceId);
+    if (!ent) {
+      return res.status(403).json({
+        error: { message: `Feature "${featureKey}" requires an active subscription`, code: "FORBIDDEN" },
+      });
+    }
+
+    const features = ent.features as string[] | null;
+    if (!features || !features.includes(featureKey)) {
+      return res.status(403).json({
+        error: { message: `Your plan does not include the "${featureKey}" feature`, code: "FORBIDDEN" },
+      });
+    }
+
+    next();
+  };
 }

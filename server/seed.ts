@@ -589,6 +589,45 @@ Use the "Installed" tab to see all items currently active in your workspace. You
     isPublished: true,
   },
   {
+    title: "Marketplace Purchasing",
+    slug: "marketplace-purchasing",
+    content: `The Marketplace Purchasing System extends the ORIGIN Marketplace with Stripe-backed monetization for paid items.
+
+## Billing Types
+
+- **Free** — Install immediately, no payment
+- **One-time** — Single Stripe Checkout payment
+- **Subscription** — Recurring monthly billing via Stripe
+
+## Purchase Flow
+
+1. User clicks "Purchase" on a paid marketplace item
+2. System creates a Stripe Checkout session (payment or subscription mode)
+3. User completes payment on Stripe-hosted checkout
+4. Webhook records the purchase and auto-installs the item
+5. For subscriptions, cancellation revokes the purchase
+
+## API Endpoints
+
+- POST /api/marketplace/checkout — Create Stripe Checkout session for a paid item
+- GET /api/marketplace/purchases — List workspace purchases
+
+## Entitlement Middleware
+
+Routes can be gated with \`requireEntitlement(featureKey)\` middleware, which checks the workspace's entitlements features array.
+
+## Install Gating
+
+Paid items require a purchase record in \`workspace_purchases\` before the install endpoint will accept them. Free items bypass this check.
+
+See /docs/MARKETPLACE_PURCHASING.md for complete reference.`,
+    category: "guides",
+    type: "developer",
+    tags: ["marketplace", "purchasing", "stripe", "billing", "entitlements"],
+    sortOrder: 14,
+    isPublished: true,
+  },
+  {
     title: "Component Registry",
     slug: "component-registry",
     content: `The Component Registry is ORIGIN's global catalog of page builder components.

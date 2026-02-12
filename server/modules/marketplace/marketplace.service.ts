@@ -47,6 +47,14 @@ class MarketplaceService {
     return marketplaceRepo.findInstallsByWorkspace(workspaceId);
   }
 
+  async getPurchasesByWorkspace(workspaceId: string) {
+    return marketplaceRepo.findPurchasesByWorkspace(workspaceId);
+  }
+
+  async getPurchase(workspaceId: string, itemId: string) {
+    return marketplaceRepo.findPurchase(workspaceId, itemId);
+  }
+
   async installItem(workspaceId: string, itemId: string) {
     const existing = await marketplaceRepo.findInstall(workspaceId, itemId);
     if (existing) {
@@ -57,11 +65,18 @@ class MarketplaceService {
     const item = await marketplaceRepo.findItemById(itemId);
     if (!item) throw new NotFoundError("Marketplace item");
 
+    if (item.billingType !== "free" && !item.isFree) {
+      const purchase = await marketplaceRepo.findPurchase(workspaceId, itemId);
+      if (!purchase) {
+        throw new ValidationError("Purchase required before installing this item");
+      }
+    }
+
     return marketplaceRepo.createInstall({
       workspaceId,
       itemId,
       enabled: true,
-      purchased: item.isFree,
+      purchased: item.isFree || item.billingType === "free",
     });
   }
 
@@ -70,6 +85,36 @@ class MarketplaceService {
     if (!existing) throw new NotFoundError("Installation not found");
 
     return marketplaceRepo.updateInstall(existing.id, { enabled: false });
+  }
+
+  async recordPurchase(workspaceId: string, itemId: string, stripePaymentIntentId?: string, stripeSubscriptionItemId?: string) {
+    const existing = await marketplaceRepo.findPurchase(workspaceId, itemId);
+    if (existing) return existing;
+
+    const purchase = await marketplaceRepo.createPurchase({
+      workspaceId,
+      marketplaceItemId: itemId,
+      stripePaymentIntentId: stripePaymentIntentId ?? null,
+      stripeSubscriptionItemId: stripeSubscriptionItemId ?? null,
+    });
+
+    const install = await marketplaceRepo.findInstall(workspaceId, itemId);
+    if (install) {
+      await marketplaceRepo.updateInstall(install.id, { purchased: true, enabled: true });
+    } else {
+      await marketplaceRepo.createInstall({
+        workspaceId,
+        itemId,
+        enabled: true,
+        purchased: true,
+      });
+    }
+
+    return purchase;
+  }
+
+  async revokePurchaseBySubscriptionItemId(stripeSubscriptionItemId: string) {
+    return marketplaceRepo.deletePurchaseBySubscriptionItemId(stripeSubscriptionItemId);
   }
 
   async startPreview(workspaceId: string, itemId: string) {

@@ -1,8 +1,9 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { marketplaceService } from "./marketplace.service";
 import { validateBody } from "../shared/validate";
 import { insertMarketplaceItemSchema } from "@shared/schema";
 import { requireAuth, requireRole, requireWorkspaceContext } from "../shared/auth-middleware";
+import { createMarketplaceCheckoutSession } from "../billing/billing.service";
 
 export function marketplaceRoutes(): Router {
   const router = Router();
@@ -67,6 +68,16 @@ export function marketplaceRoutes(): Router {
     }
   });
 
+  router.get("/purchases", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
+    try {
+      const workspaceId = req.session!.activeWorkspaceId!;
+      const purchases = await marketplaceService.getPurchasesByWorkspace(workspaceId);
+      res.json(purchases);
+    } catch (err) {
+      next(err);
+    }
+  });
+
   router.post("/install", requireAuth(), requireWorkspaceContext(), async (req, res, next) => {
     try {
       const workspaceId = req.session!.activeWorkspaceId!;
@@ -84,6 +95,50 @@ export function marketplaceRoutes(): Router {
       const { itemId } = req.body;
       const result = await marketplaceService.uninstallItem(workspaceId, itemId);
       res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.post("/checkout", requireAuth(), requireWorkspaceContext(), async (req: Request, res: Response, next) => {
+    try {
+      const workspaceId = req.session!.activeWorkspaceId!;
+      const user = req.user!;
+      const { itemId } = req.body;
+
+      if (!itemId) {
+        return res.status(400).json({ error: { message: "itemId is required", code: "VALIDATION_ERROR" } });
+      }
+
+      const item = await marketplaceService.getItemById(itemId);
+
+      if (item.billingType === "free" || item.isFree) {
+        return res.status(400).json({ error: { message: "This item is free and does not require checkout", code: "VALIDATION_ERROR" } });
+      }
+
+      if (!item.priceId) {
+        return res.status(400).json({ error: { message: "This item does not have a Stripe price configured", code: "VALIDATION_ERROR" } });
+      }
+
+      const existingPurchase = await marketplaceService.getPurchase(workspaceId, itemId);
+      if (existingPurchase) {
+        return res.status(409).json({ error: { message: "Item already purchased", code: "CONFLICT" } });
+      }
+
+      const protocol = req.headers["x-forwarded-proto"] || "http";
+      const host = req.headers.host;
+      const baseUrl = `${protocol}://${host}`;
+
+      const session = await createMarketplaceCheckoutSession(
+        workspaceId,
+        user.email,
+        user.name || "Workspace User",
+        item,
+        `${baseUrl}/app/marketplace?purchased=${item.slug}`,
+        `${baseUrl}/app/marketplace?canceled=${item.slug}`,
+      );
+
+      res.json({ url: session.url });
     } catch (err) {
       next(err);
     }

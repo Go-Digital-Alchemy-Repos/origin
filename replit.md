@@ -25,7 +25,7 @@ The frontend uses React 18, Tailwind CSS, and shadcn/ui. `wouter` handles routin
 -   **Database:** PostgreSQL with Drizzle ORM.
 -   **Authentication:** BetterAuth for email/password and session management, integrated with `useSession()` for frontend authentication state.
 -   **Server Module Pattern:** Self-contained modules (e.g., `server/modules/<name>/`) with dedicated routes and service files.
--   **Middleware:** `requireAuth()`, `requireRole()`, `requireWorkspaceContext()`, and `requireWorkspaceRole()` enforce access control. Shared `getWorkspaceId()` helper in `auth-middleware.ts` for DRY workspace extraction. `validateBody(schema)` middleware in `shared/validate.ts` for request body validation.
+-   **Middleware:** `requireAuth()`, `requireRole()`, `requireWorkspaceContext()`, `requireWorkspaceRole()`, and `requireEntitlement(featureKey)` enforce access control. Shared `getWorkspaceId()` helper in `auth-middleware.ts` for DRY workspace extraction. `validateBody(schema)` middleware in `shared/validate.ts` for request body validation.
 -   **Error Handling:** Standardized error response shape `{ error: { message, code } }` across all routes. Global `ZodError` handler in `routes.ts`. Error codes: `VALIDATION_ERROR`, `NOT_FOUND`, `FORBIDDEN`, `CONFLICT`, `RATE_LIMITED`.
 -   **CMS Pages:** Workspace and site-scoped pages with automatic revisioning (last 10), explicit publishing, and non-destructive rollback.
 -   **Collections System:** Defines custom content types with JSON schema, supporting 9 field types. Includes automatic item revisioning, non-destructive rollback, and auto-generated editor forms.
@@ -39,6 +39,7 @@ The frontend uses React 18, Tailwind CSS, and shadcn/ui. `wouter` handles routin
 -   **Navigation Menus:** Tree-structured menus with nested items, supporting pages, collection items, and external URLs, assignable to header/footer slots.
 -   **Page Builder:** Utilizes `@puckeditor/core` for a visual drag-and-drop experience, mapping to the Global Component Registry. Supports responsive previews and versioned content.
 -   **Site Theme System:** Per-site semantic tokens (surface, text, accent for light/dark modes) and layout presets (header, footer, spacing, container, buttons) configurable via a theme editor UI.
+-   **Marketplace Purchasing:** Stripe-backed purchases for marketplace items with billing types (free, subscription, one_time). `workspace_purchases` table tracks purchases. Checkout via Stripe sessions, webhook-driven purchase recording, and install gating for paid items.
 
 **Core Server Modules:**
 `siteTheme/`, `cmsPages/`, `cmsCollections/`, `cmsMenus/`, `forms/`, `redirects/`, `seo/`, `blog/`, `publicSite/`, `auth/`, `billing/`, `marketplace/`, `component-registry/`, `docs/`.

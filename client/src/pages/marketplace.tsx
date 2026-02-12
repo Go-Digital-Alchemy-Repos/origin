@@ -18,6 +18,9 @@ import {
   Download,
   CheckCircle2,
   XCircle,
+  CreditCard,
+  ShieldCheck,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,8 +31,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import type { MarketplaceItem, MarketplaceInstall } from "@shared/schema";
-import { useState } from "react";
+import type { MarketplaceItem, MarketplaceInstall, WorkspacePurchase } from "@shared/schema";
+import { useState, useEffect } from "react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,6 +52,19 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   "add-on": Puzzle,
 };
 
+const billingLabels: Record<string, string> = {
+  free: "Free",
+  subscription: "Subscription",
+  one_time: "One-time",
+};
+
+function getPriceDisplay(item: MarketplaceItem) {
+  if (item.isFree || item.billingType === "free") return "Free";
+  const amount = `$${(item.price / 100).toFixed(2)}`;
+  if (item.billingType === "subscription") return `${amount}/mo`;
+  return amount;
+}
+
 export default function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<MarketplaceItem | null>(null);
@@ -56,12 +72,33 @@ export default function MarketplacePage() {
   const [tab, setTab] = useState("all");
   const { toast } = useToast();
 
+  const params = new URLSearchParams(window.location.search);
+  const purchasedSlug = params.get("purchased");
+  const canceledSlug = params.get("canceled");
+
+  useEffect(() => {
+    if (purchasedSlug) {
+      toast({ title: "Purchase Complete", description: "Your purchase was successful. The item has been installed." });
+      window.history.replaceState({}, "", window.location.pathname);
+      queryClient.invalidateQueries({ queryKey: ["/api/marketplace/installs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/marketplace/purchases"] });
+    }
+    if (canceledSlug) {
+      toast({ title: "Checkout Canceled", description: "Your checkout was canceled. No charges were made.", variant: "destructive" });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [purchasedSlug, canceledSlug]);
+
   const { data: items, isLoading } = useQuery<MarketplaceItem[]>({
     queryKey: ["/api/marketplace/items"],
   });
 
   const { data: installs } = useQuery<MarketplaceInstall[]>({
     queryKey: ["/api/marketplace/installs"],
+  });
+
+  const { data: purchases } = useQuery<WorkspacePurchase[]>({
+    queryKey: ["/api/marketplace/purchases"],
   });
 
   const installMutation = useMutation({
@@ -92,6 +129,21 @@ export default function MarketplacePage() {
     },
   });
 
+  const checkoutMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      const res = await apiRequest("POST", "/api/marketplace/checkout", { itemId });
+      return res.json();
+    },
+    onSuccess: (data: { url: string }) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (err: any) => {
+      toast({ title: "Checkout Error", description: err.message || "Failed to start checkout", variant: "destructive" });
+    },
+  });
+
   const previewMutation = useMutation({
     mutationFn: async (itemId: string) => {
       const res = await apiRequest("POST", "/api/marketplace/preview/start", { itemId });
@@ -105,6 +157,11 @@ export default function MarketplacePage() {
   const installedMap = new Map<string, MarketplaceInstall>();
   (installs || []).forEach((inst) => {
     installedMap.set(inst.itemId, inst);
+  });
+
+  const purchasedMap = new Map<string, WorkspacePurchase>();
+  (purchases || []).forEach((p) => {
+    purchasedMap.set(p.marketplaceItemId, p);
   });
 
   const filteredItems = (items || []).filter((item) => {
@@ -123,9 +180,74 @@ export default function MarketplacePage() {
       })
     : filteredItems;
 
+  function renderActionButtons(item: MarketplaceItem) {
+    const install = installedMap.get(item.id);
+    const isInstalled = install?.enabled;
+    const isPurchased = purchasedMap.has(item.id);
+    const isFree = item.isFree || item.billingType === "free";
+    const isPaid = !isFree;
+
+    if (isInstalled) {
+      return (
+        <Button
+          className="w-full"
+          variant="secondary"
+          onClick={() => uninstallMutation.mutate(item.id)}
+          disabled={uninstallMutation.isPending}
+          data-testid="button-uninstall-item"
+        >
+          <XCircle className="mr-2 h-4 w-4" />
+          {uninstallMutation.isPending ? "Removing..." : "Uninstall"}
+        </Button>
+      );
+    }
+
+    if (isFree) {
+      return (
+        <Button
+          className="w-full"
+          onClick={() => installMutation.mutate(item.id)}
+          disabled={installMutation.isPending}
+          data-testid="button-install-item"
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {installMutation.isPending ? "Installing..." : "Install Free"}
+        </Button>
+      );
+    }
+
+    if (isPaid && isPurchased) {
+      return (
+        <Button
+          className="w-full"
+          onClick={() => installMutation.mutate(item.id)}
+          disabled={installMutation.isPending}
+          data-testid="button-install-purchased"
+        >
+          <Download className="mr-2 h-4 w-4" />
+          {installMutation.isPending ? "Installing..." : "Install (Purchased)"}
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        className="w-full"
+        onClick={() => checkoutMutation.mutate(item.id)}
+        disabled={checkoutMutation.isPending}
+        data-testid="button-purchase-item"
+      >
+        <CreditCard className="mr-2 h-4 w-4" />
+        {checkoutMutation.isPending ? "Redirecting..." : `Purchase — ${getPriceDisplay(item)}`}
+      </Button>
+    );
+  }
+
   if (selectedItem) {
     const install = installedMap.get(selectedItem.id);
     const isInstalled = install?.enabled;
+    const isPurchased = purchasedMap.has(selectedItem.id);
+    const isFree = selectedItem.isFree || selectedItem.billingType === "free";
     const TypeIcon = typeIcons[selectedItem.type] || Puzzle;
 
     return (
@@ -155,10 +277,14 @@ export default function MarketplacePage() {
                         {selectedItem.name}
                       </h1>
                       <Badge variant="secondary">{typeLabels[selectedItem.type]}</Badge>
-                      {selectedItem.isFree ? (
-                        <Badge variant="outline">Free</Badge>
-                      ) : (
-                        <Badge variant="default">${(selectedItem.price / 100).toFixed(2)}</Badge>
+                      <Badge variant={isFree ? "outline" : "default"}>
+                        {getPriceDisplay(selectedItem)}
+                      </Badge>
+                      {!isFree && selectedItem.billingType !== "one_time" && (
+                        <Badge variant="outline" className="text-[10px]">
+                          <RefreshCw className="mr-1 h-2.5 w-2.5" />
+                          {billingLabels[selectedItem.billingType]}
+                        </Badge>
                       )}
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">by {selectedItem.author}</p>
@@ -198,43 +324,19 @@ export default function MarketplacePage() {
                   {previewMutation.isPending ? "Starting..." : "Preview"}
                 </Button>
 
-                {isInstalled ? (
-                  <Button
-                    className="w-full"
-                    variant="secondary"
-                    onClick={() => uninstallMutation.mutate(selectedItem.id)}
-                    disabled={uninstallMutation.isPending}
-                    data-testid="button-uninstall-item"
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    {uninstallMutation.isPending ? "Removing..." : "Uninstall"}
-                  </Button>
-                ) : selectedItem.isFree ? (
-                  <Button
-                    className="w-full"
-                    onClick={() => installMutation.mutate(selectedItem.id)}
-                    disabled={installMutation.isPending}
-                    data-testid="button-install-item"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    {installMutation.isPending ? "Installing..." : "Install Free"}
-                  </Button>
-                ) : (
-                  <Button
-                    className="w-full"
-                    onClick={() => installMutation.mutate(selectedItem.id)}
-                    disabled={installMutation.isPending}
-                    data-testid="button-purchase-item"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    {installMutation.isPending ? "Processing..." : `Purchase — $${(selectedItem.price / 100).toFixed(2)}`}
-                  </Button>
-                )}
+                {renderActionButtons(selectedItem)}
 
                 {isInstalled && (
                   <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                     <CheckCircle2 className="h-4 w-4" />
                     <span>Installed</span>
+                  </div>
+                )}
+
+                {isPurchased && !isInstalled && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                    <ShieldCheck className="h-4 w-4" />
+                    <span>Purchased</span>
                   </div>
                 )}
               </CardContent>
@@ -256,6 +358,12 @@ export default function MarketplacePage() {
                     <dt className="text-muted-foreground">Author</dt>
                     <dd>{selectedItem.author}</dd>
                   </div>
+                  {!isFree && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Billing</dt>
+                      <dd>{billingLabels[selectedItem.billingType] || selectedItem.billingType}</dd>
+                    </div>
+                  )}
                   {selectedItem.category && (
                     <div className="flex justify-between">
                       <dt className="text-muted-foreground">Category</dt>
@@ -289,7 +397,7 @@ export default function MarketplacePage() {
               <Button variant="outline" onClick={() => setPreviewOpen(false)} data-testid="button-close-preview">
                 Close Preview
               </Button>
-              {selectedItem.isFree ? (
+              {isFree || isPurchased ? (
                 <Button
                   onClick={() => {
                     installMutation.mutate(selectedItem.id);
@@ -303,11 +411,12 @@ export default function MarketplacePage() {
               ) : (
                 <Button
                   onClick={() => {
-                    installMutation.mutate(selectedItem.id);
+                    checkoutMutation.mutate(selectedItem.id);
                     setPreviewOpen(false);
                   }}
                   data-testid="button-preview-purchase"
                 >
+                  <CreditCard className="mr-2 h-4 w-4" />
                   Purchase & Install
                 </Button>
               )}
@@ -379,6 +488,8 @@ export default function MarketplacePage() {
                 const TypeIcon = typeIcons[item.type] || Puzzle;
                 const install = installedMap.get(item.id);
                 const isInstalled = install?.enabled;
+                const isPurchased = purchasedMap.has(item.id);
+                const isFree = item.isFree || item.billingType === "free";
 
                 return (
                   <Card
@@ -398,6 +509,9 @@ export default function MarketplacePage() {
                             {isInstalled && (
                               <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
                             )}
+                            {isPurchased && !isInstalled && (
+                              <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+                            )}
                           </div>
                           <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
                             {item.description}
@@ -411,11 +525,9 @@ export default function MarketplacePage() {
                           </Badge>
                           <span className="text-[10px] text-muted-foreground">v{item.version}</span>
                         </div>
-                        {item.isFree ? (
-                          <Badge variant="secondary" className="text-[10px]">Free</Badge>
-                        ) : (
-                          <Badge variant="default" className="text-[10px]">${(item.price / 100).toFixed(2)}</Badge>
-                        )}
+                        <Badge variant={isFree ? "secondary" : "default"} className="text-[10px]">
+                          {getPriceDisplay(item)}
+                        </Badge>
                       </div>
                     </CardContent>
                   </Card>

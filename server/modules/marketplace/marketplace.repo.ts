@@ -1,7 +1,7 @@
 import { db } from "../../db";
-import { marketplaceItems, marketplaceInstalls, previewSessions } from "@shared/schema";
+import { marketplaceItems, marketplaceInstalls, previewSessions, workspacePurchases } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
-import type { InsertMarketplaceItem, InsertMarketplaceInstall, InsertPreviewSession } from "@shared/schema";
+import type { InsertMarketplaceItem, InsertMarketplaceInstall, InsertPreviewSession, InsertWorkspacePurchase } from "@shared/schema";
 
 class MarketplaceRepo {
   async findAllItems() {
@@ -100,6 +100,36 @@ class MarketplaceRepo {
   async deletePreviewSession(id: string) {
     const [session] = await db.delete(previewSessions).where(eq(previewSessions.id, id)).returning();
     return session ?? null;
+  }
+
+  async findPurchase(workspaceId: string, itemId: string) {
+    const [purchase] = await db
+      .select()
+      .from(workspacePurchases)
+      .where(and(eq(workspacePurchases.workspaceId, workspaceId), eq(workspacePurchases.marketplaceItemId, itemId)));
+    return purchase ?? null;
+  }
+
+  async findPurchasesByWorkspace(workspaceId: string) {
+    return db.select().from(workspacePurchases).where(eq(workspacePurchases.workspaceId, workspaceId));
+  }
+
+  async createPurchase(data: InsertWorkspacePurchase) {
+    const [purchase] = await db.insert(workspacePurchases).values(data).returning();
+    return purchase;
+  }
+
+  async deletePurchase(id: string) {
+    const [purchase] = await db.delete(workspacePurchases).where(eq(workspacePurchases.id, id)).returning();
+    return purchase ?? null;
+  }
+
+  async deletePurchaseBySubscriptionItemId(stripeSubscriptionItemId: string) {
+    const [purchase] = await db
+      .delete(workspacePurchases)
+      .where(eq(workspacePurchases.stripeSubscriptionItemId, stripeSubscriptionItemId))
+      .returning();
+    return purchase ?? null;
   }
 }
 

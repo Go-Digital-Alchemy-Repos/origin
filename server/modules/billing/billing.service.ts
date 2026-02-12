@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { stripeCustomers, subscriptions, entitlements, workspaces } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { log } from "../../index";
+import { marketplaceService } from "../marketplace/marketplace.service";
 
 const PLANS = {
   starter: {
@@ -171,8 +172,27 @@ export async function handleWebhookEvent(event: Stripe.Event) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       const workspaceId = session.metadata?.workspaceId;
+      if (!workspaceId) break;
+
+      if (session.metadata?.purchaseType === "marketplace") {
+        const marketplaceItemId = session.metadata.marketplaceItemId;
+        if (!marketplaceItemId) break;
+
+        if (session.mode === "subscription" && session.subscription) {
+          const stripe = getStripeClient()!;
+          const sub = await stripe.subscriptions.retrieve(session.subscription as string);
+          const subscriptionItemId = sub.items.data[0]?.id;
+          await marketplaceService.recordPurchase(workspaceId, marketplaceItemId, undefined, subscriptionItemId);
+          log(`Marketplace subscription purchase recorded for item ${marketplaceItemId} in workspace ${workspaceId}`, "billing");
+        } else if (session.mode === "payment" && session.payment_intent) {
+          await marketplaceService.recordPurchase(workspaceId, marketplaceItemId, session.payment_intent as string, undefined);
+          log(`Marketplace one-time purchase recorded for item ${marketplaceItemId} in workspace ${workspaceId}`, "billing");
+        }
+        break;
+      }
+
       const plan = session.metadata?.plan || "starter";
-      if (!workspaceId || !session.subscription) break;
+      if (!session.subscription) break;
 
       const stripe = getStripeClient()!;
       const sub = await stripe.subscriptions.retrieve(session.subscription as string);
@@ -255,6 +275,14 @@ export async function handleWebhookEvent(event: Stripe.Event) {
       const workspaceId = sub.metadata?.workspaceId;
       if (!workspaceId) break;
 
+      if (sub.metadata?.purchaseType === "marketplace") {
+        for (const item of sub.items.data) {
+          await marketplaceService.revokePurchaseBySubscriptionItemId(item.id);
+        }
+        log(`Marketplace subscription canceled for workspace ${workspaceId}`, "billing");
+        break;
+      }
+
       await db
         .update(subscriptions)
         .set({ status: "canceled", cancelAtPeriodEnd: false, updatedAt: new Date() })
@@ -284,6 +312,57 @@ export async function handleWebhookEvent(event: Stripe.Event) {
     default:
       log(`Unhandled webhook event: ${event.type}`, "billing");
   }
+}
+
+export async function createMarketplaceCheckoutSession(
+  workspaceId: string,
+  email: string,
+  customerName: string,
+  item: { id: string; name: string; billingType: string; priceId: string | null },
+  successUrl: string,
+  cancelUrl: string,
+) {
+  const stripe = getStripeClient();
+  if (!stripe) throw new Error("Stripe is not configured");
+  if (!item.priceId) throw new Error("Item has no Stripe price configured");
+
+  const customerId = await getOrCreateStripeCustomer(workspaceId, email, customerName);
+  const mode = item.billingType === "subscription" ? "subscription" : "payment";
+
+  const params: Stripe.Checkout.SessionCreateParams = {
+    customer: customerId,
+    mode: mode as Stripe.Checkout.SessionCreateParams.Mode,
+    line_items: [{ price: item.priceId, quantity: 1 }],
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      workspaceId,
+      marketplaceItemId: item.id,
+      purchaseType: "marketplace",
+    },
+  };
+
+  if (mode === "subscription") {
+    params.subscription_data = {
+      metadata: {
+        workspaceId,
+        marketplaceItemId: item.id,
+        purchaseType: "marketplace",
+      },
+    };
+  }
+
+  if (mode === "payment") {
+    params.payment_intent_data = {
+      metadata: {
+        workspaceId,
+        marketplaceItemId: item.id,
+        purchaseType: "marketplace",
+      },
+    };
+  }
+
+  return stripe.checkout.sessions.create(params);
 }
 
 export function isStripeConfigured(): boolean {

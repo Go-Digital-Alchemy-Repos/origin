@@ -285,6 +285,9 @@ export const marketplaceItemTypeEnum = z.enum([
 
 export type MarketplaceItemType = z.infer<typeof marketplaceItemTypeEnum>;
 
+export const billingTypeEnum = z.enum(["free", "subscription", "one_time"]);
+export type BillingType = z.infer<typeof billingTypeEnum>;
+
 export const marketplaceItems = pgTable("marketplace_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   type: text("type").notNull(),
@@ -298,6 +301,9 @@ export const marketplaceItems = pgTable("marketplace_items", {
   priceId: text("price_id"),
   isFree: boolean("is_free").notNull().default(true),
   price: integer("price").notNull().default(0),
+  billingType: text("billing_type").notNull().default("free"),
+  entitlementKey: text("entitlement_key"),
+  entitlementPayloadJson: jsonb("entitlement_payload_json"),
   version: text("version").notNull().default("1.0.0"),
   status: text("status").notNull().default("published"),
   category: text("category"),
@@ -349,6 +355,23 @@ export const insertPreviewSessionSchema = createInsertSchema(previewSessions).om
 
 export type InsertPreviewSession = z.infer<typeof insertPreviewSessionSchema>;
 export type PreviewSession = typeof previewSessions.$inferSelect;
+
+export const workspacePurchases = pgTable("workspace_purchases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workspaceId: varchar("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  marketplaceItemId: varchar("marketplace_item_id").notNull().references(() => marketplaceItems.id, { onDelete: "cascade" }),
+  stripeSubscriptionItemId: text("stripe_subscription_item_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertWorkspacePurchaseSchema = createInsertSchema(workspacePurchases).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertWorkspacePurchase = z.infer<typeof insertWorkspacePurchaseSchema>;
+export type WorkspacePurchase = typeof workspacePurchases.$inferSelect;
 
 export const pageStatusEnum = z.enum(["DRAFT", "PUBLISHED"]);
 export type PageStatus = z.infer<typeof pageStatusEnum>;
