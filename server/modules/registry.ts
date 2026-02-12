@@ -5,6 +5,7 @@ import { createModulesModule } from "./modules";
 import { createAuthModule } from "./auth";
 import { createBillingModule } from "./billing";
 import { createMarketplaceModule } from "./marketplace";
+import { createComponentRegistryModule } from "./component-registry";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -15,6 +16,7 @@ export function registerAllModules(): Router {
   api.use(createAuthModule());
   api.use(createBillingModule());
   api.use(createMarketplaceModule());
+  api.use(createComponentRegistryModule());
 
   return api;
 }

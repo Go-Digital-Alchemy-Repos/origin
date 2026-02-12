@@ -588,6 +588,86 @@ Use the "Installed" tab to see all items currently active in your workspace. You
     sortOrder: 13,
     isPublished: true,
   },
+  {
+    title: "Component Registry",
+    slug: "component-registry",
+    content: `The Component Registry is ORIGIN's global catalog of page builder components.
+
+## Overview
+
+Each registered component defines its prop schema, default presets, preview configuration, and documentation. The registry powers the builder palette, section presets, marketplace packs, and resource docs.
+
+## Components
+
+The registry ships with 10 foundational components:
+
+- **Hero** — Full-width hero section with headline, CTA, and background image
+- **Feature Grid** — Grid layout showcasing features with icons
+- **Testimonials** — Customer quotes in grid, carousel, or stacked layouts
+- **Pricing** — Plan comparison table with monthly/annual toggle
+- **FAQ** — Expandable accordion with optional search
+- **Gallery** — Image gallery with grid, masonry, or carousel layouts
+- **CTA** — Call-to-action banner with action buttons
+- **Rich Text** — Markdown content block with typography styling
+- **Divider** — Visual separator with multiple styles
+- **Spacer** — Invisible spacing block for vertical rhythm
+
+## API
+
+- GET /api/component-registry — List all components (summary)
+- GET /api/component-registry/:slug — Full component detail
+
+## UI
+
+Browse at Studio > Component Registry (/app/studio/components).
+
+See /docs/COMPONENT_REGISTRY.md for complete reference.`,
+    category: "architecture",
+    type: "developer",
+    tags: ["components", "registry", "builder", "presets"],
+    sortOrder: 14,
+    isPublished: true,
+  },
+  {
+    title: "Using Page Builder Components",
+    slug: "help-page-builder-components",
+    content: `Learn about the components available in ORIGIN's page builder.
+
+## Available Components
+
+ORIGIN includes a library of pre-built components you can use to build pages:
+
+### Layout
+- **Hero** — Eye-catching banner sections with headlines and call-to-action buttons
+
+### Content
+- **Feature Grid** — Highlight your features or services in a clean grid
+- **FAQ** — Expandable question-and-answer sections
+- **CTA** — Attention-grabbing action banners
+- **Rich Text** — Free-form content with formatting support
+
+### Media
+- **Gallery** — Beautiful image galleries with lightbox support
+
+### Commerce
+- **Pricing** — Professional pricing plan comparison tables
+
+### Social Proof
+- **Testimonials** — Customer quotes and reviews
+
+### Utility
+- **Divider** — Visual separators between sections
+- **Spacer** — Invisible spacing for layout control
+
+## How to Use
+
+Each component comes with pre-configured presets you can apply with one click, then customize to match your brand. Browse the full component library in the page builder palette.`,
+    category: "help",
+    type: "help",
+    tags: ["components", "builder", "pages", "sections"],
+    sortOrder: 15,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [

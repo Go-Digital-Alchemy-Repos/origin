@@ -4,7 +4,7 @@
 
 ORIGIN is a modern website platform that replaces WordPress. It provides a modular architecture, visual page builder, and enterprise-grade infrastructure for building, managing, and scaling websites.
 
-**Current State**: MVP with authentication (BetterAuth), multi-tenant workspaces, role-based access control, marketing site, app dashboard, module browser, docs library, marketplace framework, Help & Resources, and modular server architecture.
+**Current State**: MVP with authentication (BetterAuth), multi-tenant workspaces, role-based access control, marketing site, app dashboard, module browser, docs library, marketplace framework, Help & Resources, component registry, and modular server architecture.
 
 ## Tech Stack
 
@@ -64,9 +64,11 @@ server/
     auth/              # Auth/workspace routes module
     billing/           # Stripe billing module (checkout, portal, webhooks)
     marketplace/       # Marketplace module (items, installs, preview sessions)
+    component-registry/ # Component registry module (page builder components)
 
 shared/
   schema.ts            # Drizzle schema + Zod types for all entities
+  component-registry.ts # Component registry definitions (types + 10 components)
 
 docs/
   ORIGIN_DOCS_GOVERNANCE.md  # Doc requirements and definition of done
@@ -81,6 +83,7 @@ docs/
   DOCS_LIBRARY_SYSTEM.md     # Docs Library system architecture
   RESOURCE_DOCS_SYSTEM.md    # Help & Resources filtered docs system
   MARKETPLACE_FRAMEWORK.md   # Marketplace framework architecture
+  COMPONENT_REGISTRY.md      # Component registry architecture
 ```
 
 ## Database Tables
@@ -134,6 +137,7 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - `/api/docs/*` — Documentation endpoints
 - `/api/marketplace/*` — Marketplace endpoints
 - `/api/billing/*` — Billing endpoints
+- `/api/component-registry` — Component registry endpoints
 - `/api/webhooks/stripe` — Stripe webhook endpoint
 
 ### Documentation System
@@ -149,6 +153,14 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - All items support non-destructive preview before install
 - Install/uninstall is per-workspace
 - Each item can have an associated help doc via doc_slug
+
+### Component Registry
+- Global catalog of page builder components defined in `shared/component-registry.ts`
+- Each component: name, slug, prop schema, presets, preview config, docsMarkdown, devNotes
+- 10 initial components: Hero, Feature Grid, Testimonials, Pricing, FAQ, Gallery, CTA, Rich Text, Divider, Spacer
+- Served via `/api/component-registry` endpoints
+- Read-only UI at `/app/studio/components` in Platform Studio
+- Powers: builder palette (planned), section presets (planned), marketplace packs (planned), resource docs (active)
 
 ### App Shell Navigation
 - Dual-mode sidebar: Client Workspace view + Platform Studio view
@@ -169,9 +181,10 @@ Each module: `server/modules/<name>/` with `index.ts`, `<name>.routes.ts`, `<nam
 - SUPER_ADMIN: `admin@digitalalchemy.dev` / `OriginAdmin2026!`
 - Demo workspace: "Digital Alchemy" (enterprise plan)
 - Demo site: "Demo Site" (published)
-- 18 doc entries (developer + help + marketplace docs)
+- 20 doc entries (developer + help + marketplace + component registry docs)
 - 12 platform modules
 - 14 marketplace items (2 site kits, 4 sections, 3 widgets, 2 apps, 3 add-ons)
+- 10 registered page builder components
 
 ## Docs Update Checklist
 
@@ -185,6 +198,17 @@ Every future prompt that modifies ORIGIN must verify:
 7. Update replit.md with recent changes
 
 ## Recent Changes
+
+- 2026-02-12: Component Registry foundation
+  - Created shared component registry at shared/component-registry.ts
+  - Defined RegistryComponent type with prop schema, presets, preview config, docs, devNotes
+  - Added 10 initial components: Hero, Feature Grid, Testimonials, Pricing, FAQ, Gallery, CTA, Rich Text, Divider, Spacer
+  - Created component-registry server module with GET /api/component-registry endpoints
+  - Built read-only Component Registry UI at /app/studio/components (Platform Studio)
+  - UI features: category tabs, search, component detail with Props/Presets, Usage Docs, Dev Notes tabs
+  - Created COMPONENT_REGISTRY.md documentation
+  - Seeded 2 new doc entries (developer + help) for component registry
+  - Non-destructive: existing data preserved
 
 - 2026-02-12: Documentation systems + Marketplace framework
   - Fixed webhook routing bug (double /webhooks prefix)

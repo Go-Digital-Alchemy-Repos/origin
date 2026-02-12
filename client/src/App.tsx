@@ -43,6 +43,7 @@ import StubPage from "@/pages/stub";
 import BillingPage from "@/pages/billing";
 import HelpPage from "@/pages/help";
 import MarketplacePage from "@/pages/marketplace";
+import ComponentRegistryPage from "@/pages/component-registry";
 
 function AppRouter() {
   return (
@@ -71,7 +72,7 @@ function AppRouter() {
       <Route path="/app/studio/widgets">{() => <StubPage title="Widgets" description="Create and manage interactive widgets. Embeddable components for any site." icon="component" studio />}</Route>
       <Route path="/app/studio/apps">{() => <StubPage title="Apps" description="Platform applications and integrations. Manage first-party and third-party apps." icon="box" studio />}</Route>
       <Route path="/app/studio/marketplace">{() => <StubPage title="Marketplace Catalog" description="Manage the marketplace catalog. Review, approve, and publish modules and themes." icon="store" studio />}</Route>
-      <Route path="/app/studio/components">{() => <StubPage title="Component Registry" description="Global component registry. Manage design tokens, shared components, and theme definitions." icon="blocks" studio />}</Route>
+      <Route path="/app/studio/components" component={ComponentRegistryPage} />
       <Route path="/app/studio/status">{() => <StubPage title="System Status" description="Platform health monitoring. Uptime, performance metrics, and service status." icon="activity" studio />}</Route>
       <Route path="/app/billing" component={BillingPage} />
       <Route path="/app/studio/billing" component={BillingPage} />
