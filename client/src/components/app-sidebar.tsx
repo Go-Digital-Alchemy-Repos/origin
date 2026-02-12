@@ -29,6 +29,7 @@ import {
   ArrowRightLeft,
   Search,
   FileUp,
+  Ticket,
 } from "lucide-react";
 import {
   Sidebar,
@@ -68,11 +69,15 @@ const clientNav: NavItem[] = [
   { title: "Theme", href: "/app/sites/theme", icon: Palette },
 ];
 
+const clientAppsNav: NavItem[] = [
+  { title: "Leads", href: "/app/crm/leads", icon: Contact },
+  { title: "Contacts", href: "/app/crm/contacts", icon: Users },
+  { title: "Tickets", href: "/app/apps/tickets", icon: Ticket },
+];
+
 const clientSecondaryNav: NavItem[] = [
   { title: "Marketplace", href: "/app/marketplace", icon: Store },
   { title: "Migration", href: "/app/migration", icon: FileUp },
-  { title: "Leads", href: "/app/crm/leads", icon: Contact },
-  { title: "Contacts", href: "/app/crm/contacts", icon: Users },
 ];
 
 const clientBottomNav: NavItem[] = [
@@ -212,6 +217,8 @@ export function AppSidebar() {
         ) : (
           <>
             <NavSection items={clientNav} location={location} label="Content" />
+            <SidebarSeparator />
+            <NavSection items={clientAppsNav} location={location} label="Apps" />
             <SidebarSeparator />
             <NavSection items={clientSecondaryNav} location={location} label="Extend" />
             <SidebarSeparator />

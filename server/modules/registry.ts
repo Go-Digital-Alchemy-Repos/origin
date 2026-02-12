@@ -16,7 +16,7 @@ import { createSeoModule } from "./seo";
 import { createBlogModule } from "./blog";
 import { publicSitePreviewRoutes } from "./publicSite";
 import { createSiteKitsModule } from "./siteKits";
-import { createCrmModule } from "./apps/crm";
+import { createAppsModule } from "./apps";
 import { createMigrationModule } from "./migration";
 import { createAiCopilotModule } from "./aiCopilot";
 import { createOnboardingModule } from "./onboarding";
@@ -41,7 +41,7 @@ export function registerAllModules(): Router {
   api.use(createBlogModule());
   api.use(publicSitePreviewRoutes());
   api.use(createSiteKitsModule());
-  api.use(createCrmModule());
+  api.use(createAppsModule());
   api.use(createMigrationModule());
   api.use(createAiCopilotModule());
   api.use(createOnboardingModule());
