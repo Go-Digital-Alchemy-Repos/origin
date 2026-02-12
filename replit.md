@@ -58,6 +58,8 @@ The frontend utilizes React 18 with Tailwind CSS and shadcn/ui for a modern, com
 
 -   `site_themes` — Per-site theme tokens and layout presets (site_id unique FK)
 -   `site_domains` — Custom domain mappings (site_id, domain, is_primary, verified_at)
+-   `menus` — Navigation menus scoped by workspace + site, with optional slot (header/footer)
+-   `menu_items` — Menu items with parent_id nesting, sort_order, type (page/collection_list/collection_item/external_url), target
 -   `pages` — CMS pages scoped by workspace + site
 -   `page_revisions` — Revision history for pages
 -   `collections` — Custom content type definitions
@@ -70,6 +72,7 @@ Located at `server/modules/`:
 -   `siteTheme/` — Site theme GET/PUT with zod validation
 -   `cmsPages/` — CMS pages CRUD + revisions
 -   `cmsCollections/` — Collections CRUD + items + revisions
+-   `cmsMenus/` — Navigation menus CRUD + items + reorder + slot assignment
 -   `publicSite/` — Public site rendering, host resolver, cache headers + purge
 -   `auth/` — Auth/workspace routes
 -   `billing/` — Stripe billing
@@ -80,6 +83,16 @@ Located at `server/modules/`:
 -   `modules/` — Platform modules
 
 ## Recent Changes
+
+- 2026-02-12: Navigation menus system
+  - Added menus + menu_items DB tables with parent_id nesting and sort_order
+  - Created cmsMenus server module (service, routes) with full CRUD + reorder + slot assignment
+  - Built menus UI page at /app/menus with drag/drop tree editor, indent/outdent, item type selector
+  - Menu items support 4 types: page, collection_list, collection_item, external_url
+  - Slot assignment (header/footer) auto-renders menus on public site
+  - Integrated menu rendering into publicSite renderer (header nav + footer links)
+  - Updated public preview route to include menu data
+  - Seeded 2 doc entries (developer + help)
 
 - 2026-02-12: Public site rendering & domain routing
   - Added site_domains DB table for custom domain mappings

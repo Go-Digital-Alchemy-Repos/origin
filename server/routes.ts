@@ -35,9 +35,11 @@ export async function registerRoutes(
         return res.status(404).type("html").send(render404Page(site.name));
       }
 
-      const [page, theme] = await Promise.all([
+      const [page, theme, headerMenu, footerMenu] = await Promise.all([
         publicSiteService.getPublishedPage(site.id, targetSlug),
         publicSiteService.getSiteTheme(site.id),
+        publicSiteService.getMenuBySlot(site.id, "header"),
+        publicSiteService.getMenuBySlot(site.id, "footer"),
       ]);
 
       if (!page) {
@@ -45,7 +47,14 @@ export async function registerRoutes(
       }
 
       setNoCacheHeaders(res);
-      const html = renderPublicPage({ site: { name: site.name, slug: site.slug }, page, theme, pages: allPages });
+      const html = renderPublicPage({
+        site: { name: site.name, slug: site.slug },
+        page,
+        theme,
+        pages: allPages,
+        headerMenu: headerMenu ?? undefined,
+        footerMenu: footerMenu ?? undefined,
+      });
       res.type("html").send(html);
     } catch (err) {
       res.status(500).json({ error: "Render failed" });

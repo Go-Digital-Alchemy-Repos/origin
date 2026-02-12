@@ -1,10 +1,27 @@
 import type { PublishedPage } from "./publicSite.service";
 
+interface MenuItemData {
+  id: string;
+  parentId: string | null;
+  label: string;
+  type: string;
+  target: string | null;
+  openInNewTab: boolean;
+  sortOrder: number;
+}
+
+interface MenuData {
+  name: string;
+  items: MenuItemData[];
+}
+
 interface RenderOptions {
   site: { name: string; slug: string };
   page: PublishedPage;
   theme?: { tokensJson: unknown; layoutJson: unknown } | null;
   pages: Array<{ slug: string; title: string }>;
+  headerMenu?: MenuData;
+  footerMenu?: MenuData;
 }
 
 function escapeHtml(str: string): string {
@@ -145,8 +162,69 @@ function renderContentBlock(block: any): string {
   }
 }
 
+function getMenuItemHref(item: MenuItemData, pages: Array<{ slug: string; title: string }>): string {
+  switch (item.type) {
+    case "page": {
+      const found = pages.find((p) => p.slug === item.target);
+      return found ? `/${found.slug}` : `#`;
+    }
+    case "collection_list":
+      return item.target ? `/collections/${item.target}` : "#";
+    case "collection_item":
+      return item.target ? `/collections/item/${item.target}` : "#";
+    case "external_url":
+      return item.target || "#";
+    default:
+      return "#";
+  }
+}
+
+function renderMenuItems(items: MenuItemData[], parentId: string | null, pages: Array<{ slug: string; title: string }>, depth: number = 0): string {
+  const children = items
+    .filter((i) => i.parentId === parentId)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  if (children.length === 0) return "";
+
+  const isTop = depth === 0;
+  const listStyle = isTop
+    ? "display:flex;gap:16px;list-style:none;padding:0;margin:0;align-items:center"
+    : "list-style:none;padding:8px 0;margin:0;min-width:160px";
+
+  return `<ul style="${listStyle}">${children.map((item) => {
+    const href = getMenuItemHref(item, pages);
+    const subItems = items.filter((i) => i.parentId === item.id);
+    const hasDropdown = subItems.length > 0;
+    const target = item.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : "";
+    const linkStyle = isTop
+      ? "font-size:0.875rem;text-decoration:none;color:#374151;font-weight:500;padding:4px 0"
+      : "font-size:0.875rem;text-decoration:none;color:#374151;display:block;padding:6px 16px";
+
+    let html = `<li class="nav-item" style="position:relative">`;
+    html += `<a href="${escapeHtml(href)}" style="${linkStyle}"${target}>${escapeHtml(item.label)}</a>`;
+    if (hasDropdown) {
+      html += `<div class="nav-dropdown" style="display:none;position:absolute;top:100%;left:${isTop ? "0" : "100%"};${isTop ? "" : "top:0;"}background:#fff;border:1px solid #e5e7eb;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:50">`;
+      html += renderMenuItems(items, item.id, pages, depth + 1);
+      html += `</div>`;
+    }
+    html += `</li>`;
+    return html;
+  }).join("")}</ul>`;
+}
+
+function renderFooterMenu(items: MenuItemData[], pages: Array<{ slug: string; title: string }>): string {
+  const topItems = items.filter((i) => !i.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+  if (topItems.length === 0) return "";
+
+  return `<div style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;margin-bottom:12px">${topItems.map((item) => {
+    const href = getMenuItemHref(item, pages);
+    const target = item.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : "";
+    return `<a href="${escapeHtml(href)}" style="font-size:0.8125rem;text-decoration:none;color:#6b7280"${target}>${escapeHtml(item.label)}</a>`;
+  }).join("")}</div>`;
+}
+
 export function renderPublicPage(opts: RenderOptions): string {
-  const { site, page, pages: sitePages } = opts;
+  const { site, page, pages: sitePages, headerMenu, footerMenu } = opts;
   const title = page.seoTitle || page.title;
   const description = page.seoDescription || "";
 
@@ -158,15 +236,31 @@ export function renderPublicPage(opts: RenderOptions): string {
     contentHtml = `<section style="padding:64px 24px;max-width:768px;margin:0 auto"><pre style="white-space:pre-wrap;font-size:0.875rem">${escapeHtml(JSON.stringify(contentJson, null, 2))}</pre></section>`;
   }
 
-  const nav = sitePages.length > 1
-    ? `<nav style="background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px">
+  let nav: string;
+  if (headerMenu && headerMenu.items.length > 0) {
+    nav = `<nav style="background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px">
+        <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:24px;height:56px">
+          <strong style="font-size:0.875rem"><a href="/" style="text-decoration:none;color:inherit">${escapeHtml(site.name)}</a></strong>
+          <div style="margin-left:auto">
+            ${renderMenuItems(headerMenu.items, null, sitePages)}
+          </div>
+        </div>
+      </nav>`;
+  } else if (sitePages.length > 1) {
+    nav = `<nav style="background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px">
         <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:24px;height:56px">
           <strong style="font-size:0.875rem">${escapeHtml(site.name)}</strong>
           <div style="display:flex;gap:16px;margin-left:auto">
             ${sitePages.map((p) => `<a href="/${p.slug}" style="font-size:0.875rem;text-decoration:none;color:${p.slug === page.slug ? "#2563eb" : "#6b7280"};font-weight:${p.slug === page.slug ? "600" : "400"}">${escapeHtml(p.title)}</a>`).join("")}
           </div>
         </div>
-      </nav>`
+      </nav>`;
+  } else {
+    nav = "";
+  }
+
+  const footerContent = footerMenu && footerMenu.items.length > 0
+    ? renderFooterMenu(footerMenu.items, sitePages)
     : "";
 
   return `<!DOCTYPE html>
@@ -185,6 +279,8 @@ export function renderPublicPage(opts: RenderOptions): string {
     *, *::before, *::after { box-sizing: border-box; }
     body { margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111827; line-height: 1.5; -webkit-font-smoothing: antialiased; }
     img { max-width: 100%; height: auto; }
+    .nav-item:hover > .nav-dropdown { display: block !important; }
+    .nav-item > a:hover { color: #2563eb; }
     @media (max-width: 768px) {
       [style*="grid-template-columns: repeat(3"] { grid-template-columns: 1fr !important; }
       [style*="grid-template-columns: repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
@@ -199,7 +295,8 @@ export function renderPublicPage(opts: RenderOptions): string {
     ${contentHtml || `<div style="padding:96px 24px;text-align:center;color:#9ca3af">This page has no content yet.</div>`}
   </main>
   <footer style="border-top:1px solid #e5e7eb;padding:24px;text-align:center;font-size:0.75rem;color:#9ca3af">
-    Powered by ORIGIN
+    ${footerContent}
+    <span>Powered by ORIGIN</span>
   </footer>
 </body>
 </html>`;

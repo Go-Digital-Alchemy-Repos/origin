@@ -1066,6 +1066,96 @@ You can connect your own domain (e.g., \`www.mybusiness.com\`) to your ORIGIN si
     sortOrder: 19,
     isPublished: true,
   },
+  {
+    title: "Navigation Menus System",
+    slug: "navigation-menus-system",
+    content: `ORIGIN provides a WordPress-style navigation menu system for managing site navigation.
+
+## Architecture
+
+- **DB Tables**: \`menus\` (per-site, with optional slot assignment) and \`menu_items\` (nested via parent_id, ordered by sort_order)
+- **Server Module**: server/modules/cmsMenus/ with service + routes
+- **API Prefix**: /api/cms/
+
+## Menu Model
+
+Each menu is scoped to a workspace + site and can optionally be assigned to a slot (header or footer). When assigned, the menu is automatically rendered in that position on the public site.
+
+## Menu Items
+
+Items support four types:
+- **page** — links to a CMS page (target = page slug)
+- **collection_list** — links to a collection listing
+- **collection_item** — links to a specific collection item
+- **external_url** — links to any URL
+
+Items can be nested (parent_id) and reordered (sort_order). The tree structure supports unlimited depth.
+
+## API Endpoints
+
+- GET /api/cms/sites/:siteId/menus — list menus
+- POST /api/cms/sites/:siteId/menus — create menu
+- GET /api/cms/menus/:menuId — get menu with items
+- PATCH /api/cms/menus/:menuId — update menu
+- DELETE /api/cms/menus/:menuId — delete menu
+- POST /api/cms/menus/:menuId/items — add item
+- PATCH /api/cms/menus/:menuId/items/:itemId — update item
+- DELETE /api/cms/menus/:menuId/items/:itemId — delete item
+- PUT /api/cms/menus/:menuId/reorder — reorder items (accepts tree array)
+
+## Public Rendering
+
+The public site renderer fetches menus assigned to header/footer slots and renders them as HTML navigation. Header menus support nested dropdowns; footer menus render as flat link lists.`,
+    category: "architecture",
+    type: "developer",
+    tags: ["menus", "navigation", "cms", "header", "footer"],
+    sortOrder: 25,
+    isPublished: true,
+  },
+  {
+    title: "Managing Navigation Menus",
+    slug: "help-navigation-menus",
+    content: `Use ORIGIN's menu system to create and manage navigation for your website.
+
+## Creating a Menu
+
+1. Go to **Menus** in the sidebar
+2. Click **New Menu**
+3. Give it a name (e.g., "Main Navigation")
+4. Optionally assign it to a slot (Header or Footer) to auto-render it on your public site
+
+## Adding Items
+
+1. Open a menu by clicking on it
+2. Click **Add Item**
+3. Choose the item type:
+   - **Page** — select one of your CMS pages
+   - **Collection** — link to a collection listing
+   - **Collection Item** — link to a specific item
+   - **External URL** — link to any web address
+4. Enter a label and target
+
+## Organizing Items
+
+- **Drag and drop** items to reorder them
+- Use the **arrow buttons** to move items up/down
+- Use **indent/outdent** to create nested (dropdown) menus
+- Click the **+** button on any item to add a child item beneath it
+
+## Editing and Deleting
+
+- Click the **pencil** icon to edit an item's label, type, or target
+- Click the **trash** icon to delete an item
+
+## Slot Assignment
+
+Assigning a menu to the "Header" or "Footer" slot makes it appear automatically on your public website's header or footer navigation.`,
+    category: "help",
+    type: "help",
+    tags: ["menus", "navigation", "header", "footer", "drag-drop"],
+    sortOrder: 20,
+    isPublished: true,
+  },
 ];
 
 const seedMarketplaceItems = [

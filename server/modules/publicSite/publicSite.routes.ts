@@ -70,10 +70,12 @@ export function publicSiteRoutes(): Router {
     }
 
     try {
-      const [page, sitePages, theme] = await Promise.all([
+      const [page, sitePages, theme, headerMenu, footerMenu] = await Promise.all([
         publicSiteService.getPublishedPage(site.id, pageSlug),
         publicSiteService.getPublishedPages(site.id),
         publicSiteService.getSiteTheme(site.id),
+        publicSiteService.getMenuBySlot(site.id, "header"),
+        publicSiteService.getMenuBySlot(site.id, "footer"),
       ]);
 
       if (!page) {
@@ -88,6 +90,8 @@ export function publicSiteRoutes(): Router {
         page,
         theme,
         pages: sitePages,
+        headerMenu: headerMenu ?? undefined,
+        footerMenu: footerMenu ?? undefined,
       });
 
       res.type("html").send(html);

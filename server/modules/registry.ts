@@ -9,6 +9,7 @@ import { createComponentRegistryModule } from "./component-registry";
 import { createCmsPagesModule } from "./cmsPages";
 import { createCmsCollectionsModule } from "./cmsCollections";
 import { createSiteThemeModule } from "./siteTheme";
+import { createCmsMenusModule } from "./cmsMenus";
 
 export function registerAllModules(): Router {
   const api = Router();
@@ -23,6 +24,7 @@ export function registerAllModules(): Router {
   api.use(createCmsPagesModule());
   api.use(createCmsCollectionsModule());
   api.use(createSiteThemeModule());
+  api.use(createCmsMenusModule());
 
   return api;
 }

@@ -1,6 +1,6 @@
 import { db } from "../../db";
-import { sites, siteDomains, pages, pageRevisions, siteThemes } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { sites, siteDomains, pages, pageRevisions, siteThemes, menus, menuItems } from "@shared/schema";
+import { eq, and, desc, asc } from "drizzle-orm";
 
 const SUBDOMAIN_SUFFIX = ".originapp.ai";
 
@@ -110,5 +110,31 @@ export const publicSiteService = {
       .where(eq(siteThemes.siteId, siteId))
       .limit(1);
     return theme ?? null;
+  },
+
+  async getMenuBySlot(siteId: string, slot: string): Promise<{ name: string; items: Array<{ id: string; parentId: string | null; label: string; type: string; target: string | null; openInNewTab: boolean; sortOrder: number }> } | null> {
+    const [menu] = await db
+      .select()
+      .from(menus)
+      .where(and(eq(menus.siteId, siteId), eq(menus.slot, slot)))
+      .limit(1);
+
+    if (!menu) return null;
+
+    const items = await db
+      .select({
+        id: menuItems.id,
+        parentId: menuItems.parentId,
+        label: menuItems.label,
+        type: menuItems.type,
+        target: menuItems.target,
+        openInNewTab: menuItems.openInNewTab,
+        sortOrder: menuItems.sortOrder,
+      })
+      .from(menuItems)
+      .where(eq(menuItems.menuId, menu.id))
+      .orderBy(asc(menuItems.sortOrder));
+
+    return { name: menu.name, items };
   },
 };
