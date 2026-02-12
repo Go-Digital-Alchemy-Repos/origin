@@ -1,0 +1,53 @@
+You are working in the ORIGIN codebase. Fix an infinite retry loop in the onboarding system.
+
+HARD REQUIREMENTS
+- NON-DESTRUCTIVE.
+- Fix must prevent hammering the server.
+- Must handle missing workspace context gracefully.
+- Must keep auth + tenancy rules intact.
+- Update docs after change.
+
+SYMPTOM
+Frontend is repeatedly calling onboarding endpoints (/api/onboarding/state and/or /api/onboarding/recompute) in a tight loop.
+Those endpoints fail because there is NO workspace context, and the frontend keeps retrying endlessly.
+
+TASKS
+
+1) Identify the loop source in the frontend:
+- Search for onboarding fetch logic (React Query, fetch in useEffect, polling, refetch intervals).
+- Find any retry configuration or effect dependency causing repeated refetch on error.
+- Fix so onboarding state fetch does NOT retry endlessly.
+
+2) Add explicit error handling rules:
+- If response indicates missing workspace context (e.g. 400/409 with code WORKSPACE_CONTEXT_REQUIRED, or 403 with message), then:
+  a) STOP retries
+  b) Navigate user to a Workspace Selection route (or dashboard route that forces workspace selection)
+- If 401 unauthorized: navigate to /login
+- Only allow limited retries for transient errors (network/5xx). Cap retries (e.g. max 2) with backoff.
+
+3) Ensure workspace context is established before onboarding calls:
+- Add a guard in the onboarding page/screen:
+  - If no current workspace is selected in client state, call an endpoint to fetch available workspaces.
+  - If exactly 1 workspace, auto-select it (set context via whichever mechanism the app uses: cookie/header/store).
+  - If multiple, route to workspace picker UI.
+  - If none, route to workspace creation flow.
+
+4) Server improvements for clearer signaling:
+- In requireWorkspaceContext middleware (or onboarding routes), if workspace context missing, return a consistent error:
+  - status 409
+  - body: { error: { code: "WORKSPACE_CONTEXT_REQUIRED", message: "Workspace context required" } }
+- Ensure onboarding endpoints are behind requireAuth AND requireWorkspaceContext, but now produce this explicit error shape.
+
+5) Add a safety fuse:
+- Add a rate-limit or debounce in the client to prevent rapid repeated calls even if a bug reappears (e.g. disable refetching while in error state).
+
+6) Docs:
+- Update /docs/ONBOARDING_SYSTEM.md to document:
+  - required workspace context
+  - error code WORKSPACE_CONTEXT_REQUIRED
+  - frontend behavior when missing workspace context
+
+OUTPUT
+- List of files changed
+- Where the loop was and how it was fixed
+- How to reproduce + verify fix
