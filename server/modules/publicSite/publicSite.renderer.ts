@@ -44,7 +44,8 @@ function escapeHtml(str: string): string {
 function renderContentBlock(block: any): string {
   if (!block || !block.type || !block.props) return "";
 
-  const { type, props } = block;
+  const type = block.type.toLowerCase();
+  const { props } = block;
 
   switch (type) {
     case "hero": {
@@ -66,8 +67,9 @@ function renderContentBlock(block: any): string {
       </section>`;
     }
 
-    case "feature-grid": {
-      const features = Array.isArray(props.features) ? props.features : [];
+    case "feature-grid":
+    case "servicesgrid": {
+      const features = Array.isArray(props.features) ? props.features : Array.isArray(props.items) ? props.items : [];
       const cols = props.columns || "3";
       return `<section style="padding:64px 24px;max-width:1200px;margin:0 auto">
         ${props.heading ? `<h2 style="font-size:1.5rem;font-weight:700;text-align:center;margin:0 0 8px">${escapeHtml(props.heading)}</h2>` : ""}
@@ -76,6 +78,18 @@ function renderContentBlock(block: any): string {
           ${features.map((f: any) => `<div style="padding:20px;border:1px solid #e5e7eb;border-radius:8px">
             <h3 style="font-size:0.875rem;font-weight:600;margin:0 0 8px">${escapeHtml(f.title || "")}</h3>
             <p style="font-size:0.875rem;color:#6b7280;margin:0">${escapeHtml(f.description || "")}</p>
+          </div>`).join("")}
+        </div>
+      </section>`;
+    }
+
+    case "stats": {
+      const stats = Array.isArray(props.items) ? props.items : [];
+      return `<section style="padding:64px 24px;background:#f9fafb">
+        <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(${stats.length || 3},1fr);gap:24px;text-align:center">
+          ${stats.map((s: any) => `<div>
+            <div style="font-size:2rem;font-weight:700;color:#2563eb">${escapeHtml(s.value || "")}</div>
+            <div style="font-size:0.875rem;color:#6b7280;margin-top:4px">${escapeHtml(s.label || "")}</div>
           </div>`).join("")}
         </div>
       </section>`;
@@ -294,6 +308,8 @@ export function renderPublicPage(opts: RenderOptions): string {
   const contentJson = page.contentJson as any;
   if (contentJson && contentJson.schemaVersion && contentJson.data && Array.isArray(contentJson.data.content)) {
     contentHtml = contentJson.data.content.map(renderContentBlock).join("\n");
+  } else if (contentJson && Array.isArray(contentJson.content)) {
+    contentHtml = contentJson.content.map(renderContentBlock).join("\n");
   } else if (contentJson && typeof contentJson === "object") {
     contentHtml = `<section style="padding:64px 24px;max-width:768px;margin:0 auto"><pre style="white-space:pre-wrap;font-size:0.875rem">${escapeHtml(JSON.stringify(contentJson, null, 2))}</pre></section>`;
   }
